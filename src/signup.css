@@ -1,0 +1,323 @@
+@font-face {
+  font-family: 'Suez One';
+  src: url('./assets/fonts/SuezOne-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Text'),
+    local('SukhumvitSet-Text'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Bold'),
+    local('SukhumvitSet-Bold'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --signup-title-font: 'Suez One', serif;
+  --signup-body-font: 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --signup-card-bg: #c8c6be;
+  --signup-text: #4b4c4d;
+  --signup-muted: #8e9297;
+  --signup-input-bg: #ededed;
+  --signup-btn: #4b5b5f;
+  --signup-btn-hover: #3d4b4f;
+}
+
+.signup-page {
+  min-height: 100vh;
+  padding: 28px 24px;
+  background:
+    radial-gradient(70% 70% at 15% 10%, rgba(241, 192, 206, 0.65) 0%, rgba(241, 192, 206, 0) 65%),
+    radial-gradient(65% 65% at 88% 88%, rgba(236, 184, 198, 0.58) 0%, rgba(236, 184, 198, 0) 60%),
+    radial-gradient(80% 80% at 50% 45%, rgba(170, 194, 176, 0.86) 0%, rgba(161, 186, 169, 0.86) 60%, rgba(151, 176, 160, 0.82) 100%),
+    #c8ccc4;
+  font-family: var(--signup-body-font);
+}
+
+.signup-page.signup-page-success {
+  position: relative;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signup-page.signup-page-success .signup-logo {
+  position: absolute;
+  top: 44px;
+  left: 68px;
+  margin: 0;
+  font-size: clamp(30px, 3.2vw, 40px);
+}
+
+.signup-logo {
+  margin-left: clamp(20px, 3.4vw, 46px);
+  margin-top: 6px;
+  color: #f7f7f7;
+  font-family: var(--signup-title-font);
+  font-size: clamp(30px, 3.2vw, 56px);
+  line-height: 1;
+}
+
+.signup-card {
+  width: min(750px, calc(100% - 28px));
+  margin: clamp(16px, 3vh, 28px) auto;
+  background: var(--signup-card-bg);
+  border-radius: 20px;
+  padding: clamp(18px, 3vw, 28px) clamp(18px, 3.6vw, 44px) clamp(28px, 3.5vw, 42px);
+  color: var(--signup-text);
+}
+
+.signup-success {
+  width: min(560px, calc(100% - 32px));
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(40px, 6vh, 72px);
+  text-align: center;
+}
+
+.signup-success-title {
+  margin: 0;
+  color: #f3f3f3;
+  font-family: var(--signup-title-font);
+  font-size: clamp(52px, 7vw, 80px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.signup-login-again-btn {
+  width: 200px;
+  height: 50px;
+  border: 0 !important;
+  border-radius: 11px;
+  background: #4b5b5f !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #f4f4f4;
+  font-family: var(--signup-body-font);
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: 700;
+}
+
+.signup-login-again-btn.ant-btn:hover,
+.signup-login-again-btn.ant-btn:focus-visible,
+.signup-login-again-btn.ant-btn:active {
+  background: #3d4b4f !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff;
+}
+
+.signup-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: clamp(26px, 4vh, 44px);
+  text-decoration: none;
+  color: var(--signup-muted);
+  font-size: clamp(10px, 1.4vw, 16px);
+  font-weight: 700;
+}
+
+.signup-back .anticon {
+  font-size: clamp(24px, 2.1vw, 36px);
+  color: #505458;
+}
+
+.signup-title {
+  margin: 0 0 clamp(20px, 3vh, 32px);
+  text-align: center;
+  color: #47494b;
+  font-family: var(--signup-title-font);
+  font-size: clamp(42px, 5.3vw, 60px);
+  line-height: 1;
+}
+
+.signup-form {
+  width: 100%;
+}
+
+.signup-grid.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 22px;
+}
+
+.signup-item.ant-form-item {
+  margin-bottom: 60px;
+}
+
+.signup-item.full-row {
+  margin-bottom: 30px;
+}
+
+.signup-form .ant-form-item .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+.signup-label {
+  display: block;
+  margin: 0 0 2px 8px;
+  color: #4f5052;
+  font-size: clamp(10px, 1vw, 18px);
+  font-weight: 700;
+}
+
+.signup-label span {
+  color: #b64545;
+}
+
+.signup-form .ant-input,
+.signup-form .ant-select-selector,
+.signup-form .ant-picker,
+.signup-form .ant-input-affix-wrapper {
+  height: 40px;
+  border: 0 !important;
+  border-radius: 11px !important;
+  background: var(--signup-input-bg) !important;
+  box-shadow: none !important;
+  font-family: var(--signup-body-font);
+  font-size: clamp(14px, 1.25vw, 18px);
+  color: #4a4b4d;
+}
+
+.signup-form .ant-input,
+.signup-form .ant-input-affix-wrapper,
+.signup-form .ant-select-selector,
+.signup-form .ant-picker {
+  padding-inline: 14px;
+}
+
+.signup-form .ant-input-affix-wrapper > input.ant-input {
+  height: 100%;
+  padding: 0;
+}
+
+.signup-form .ant-input::placeholder,
+.signup-form .ant-input-affix-wrapper input::placeholder,
+.signup-form .ant-picker-input > input::placeholder,
+.signup-form .ant-select-selection-placeholder {
+  font-size: clamp(14px, 1.6vw, 16px);
+  color: #a9a9a9;
+}
+
+.signup-form .ant-select-selector {
+  align-items: center;
+}
+
+.signup-form .ant-select-arrow,
+.signup-form .ant-picker-suffix,
+.signup-form .ant-input-password-icon {
+  color: #1e1f20;
+}
+
+.signup-form .ant-picker {
+  width: 100%;
+}
+
+.signup-form .ant-form-item-explain,
+.signup-form .ant-form-item-explain-error {
+  text-align: left;
+}
+
+.signup-submit-wrap.ant-form-item {
+  margin: clamp(34px, 5.2vh, 52px) 0 0;
+}
+
+.signup-submit-wrap .ant-form-item-control-input-content {
+  display: flex;
+  justify-content: center;
+}
+
+.signup-submit-btn {
+  width: 142px;
+  height: 50px;
+  border: 0 !important;
+  border-radius: 11px;
+  background: var(--signup-btn) !important;
+  font-family: var(--signup-body-font);
+  font-size: clamp(10px, 1.4vw, 20px);
+  font-weight: 700;
+  color: #f4f4f4;
+  box-shadow: none !important;
+}
+
+.signup-submit-btn.ant-btn:hover,
+.signup-submit-btn.ant-btn:focus-visible,
+.signup-submit-btn.ant-btn:active {
+  background: var(--signup-btn-hover) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .signup-page {
+    padding: 18px 12px;
+  }
+
+  .signup-card {
+    width: min(760px, 100%);
+    padding: 16px 14px 24px;
+    border-radius: 16px;
+  }
+
+  .signup-page.signup-page-success {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .signup-page.signup-page-success .signup-logo {
+    top: 20px;
+    left: 24px;
+  }
+
+  .signup-success {
+    padding: 0;
+    gap: 60px;
+  }
+
+  .signup-login-again-btn {
+    width: 188px;
+    height: 50px;
+  }
+
+  .signup-grid.two-col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .signup-item.ant-form-item,
+  .signup-item.full-row {
+    margin-bottom: 14px;
+  }
+
+  .signup-form .ant-input,
+  .signup-form .ant-select-selector,
+  .signup-form .ant-picker,
+  .signup-form .ant-input-affix-wrapper {
+    height: 42px;
+  }
+
+  .signup-submit-btn {
+    width: 136px;
+    height: 46px;
+  }
+}

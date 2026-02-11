@@ -1,4 +1,5 @@
 import { Button, ConfigProvider, Form, Input } from 'antd'
+import { Link } from 'react-router-dom'
 import './login.css'
 
 function Login() {
@@ -45,7 +46,7 @@ function Login() {
 
           <div className="login-alt">
             <span>or</span>
-            <a href="#">Sign up</a>
+            <Link to="/signup">Sign up</Link>
           </div>
         </main>
       </div>

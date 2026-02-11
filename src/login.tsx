@@ -1,10 +1,13 @@
 import { Button, ConfigProvider, Form, Input } from 'antd'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './login.css'
 
 function Login() {
+  const navigate = useNavigate()
+
   const handleFinish = (values: { username: string; password: string }) => {
     console.log('login submit', values)
+    navigate('/home')
   }
 
   return (

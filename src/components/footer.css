@@ -1,0 +1,45 @@
+@font-face {
+  font-family: 'Suez One';
+  src: url('../assets/fonts/SuezOne-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+.app-footer {
+  height: 70px;
+  background: #c2c3c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-footer-goal-btn {
+  height: 38px;
+  border: 0 !important;
+  border-radius: 9px;
+  background: #ef668d !important;
+  color: #ffffff;
+  font-family: 'Suez One', serif;
+  font-size: clamp(16px, 1vw, 24px);
+  line-height: 1;
+  box-shadow: none !important;
+  padding: 0 18px;
+}
+
+.app-footer-goal-btn.ant-btn:hover,
+.app-footer-goal-btn.ant-btn:focus-visible,
+.app-footer-goal-btn.ant-btn:active {
+  background: #e65b83 !important;
+  border-color: transparent !important;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .app-footer {
+    height: 62px;
+  }
+
+  .app-footer-goal-btn {
+    height: 34px;
+    font-size: 18px;
+  }
+}

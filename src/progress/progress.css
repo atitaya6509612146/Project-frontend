@@ -1,0 +1,133 @@
+@font-face {
+  font-family: 'Suez One';
+  src: url('../assets/fonts/SuezOne-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Text'),
+    local('SukhumvitSet-Text'),
+    url('../assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.progress-page {
+  --layout-bar-height: 70px;
+  min-height: 100vh;
+  background: #cbc7ca;
+  font-family: 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.progress-main {
+  min-height: calc(100vh - (var(--layout-bar-height) * 2));
+  padding: clamp(10px, 1.8vw, 20px);
+  background: #e9d4df;
+}
+
+.progress-card {
+  min-height: calc(100vh - (var(--layout-bar-height) * 2) - clamp(20px, 3.6vw, 40px));
+  border-radius: 20px;
+  background: #ece9cf;
+  padding: clamp(26px, 3.8vw, 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.progress-greeting {
+  margin: 0;
+  color: #4a5960;
+  font-family: 'Suez One', serif;
+  font-size: clamp(32px, 6vw, 60px);
+  line-height: 1.05;
+}
+
+.progress-date {
+  margin: 0;
+  color: #4a5960;
+  font-family: 'Suez One', serif;
+  font-size: clamp(18px, 2.4vw, 40px);
+  line-height: 1;
+}
+
+.progress-action {
+  margin: auto;
+}
+
+.progress-pet-btn {
+  min-width: clamp(260px, 32vw, 420px);
+  height: clamp(72px, 8.5vh, 96px);
+  border-radius: 12px;
+  border: 0 !important;
+  background: #ef668d !important;
+  color: #fefefe;
+  font-family: 'Suez One', serif;
+  font-size: clamp(25px, 2vw, 36px);
+  box-shadow: none !important;
+}
+
+.progress-pet-btn.ant-btn:hover,
+.progress-pet-btn.ant-btn:focus-visible,
+.progress-pet-btn.ant-btn:active {
+  background: #dc577f !important;
+  border-color: transparent !important;
+  color: #ffffff;
+}
+
+.progress-tab-card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.progress-tab-title {
+  margin: 0;
+  color: #4a5960;
+  font-family: 'Suez One', serif;
+  font-size: clamp(34px, 4.5vw, 60px);
+  line-height: 1;
+}
+
+.progress-tab-desc {
+  margin: 0;
+  max-width: 720px;
+  color: #5b666a;
+  font-family: 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: clamp(18px, 2vw, 30px);
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .progress-page {
+    --layout-bar-height: 62px;
+  }
+
+  .progress-main {
+    min-height: calc(100vh - (var(--layout-bar-height) * 2));
+  }
+
+  .progress-card {
+    min-height: calc(100vh - (var(--layout-bar-height) * 2) - 24px);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .progress-head-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .progress-action {
+    margin: auto auto 28px;
+  }
+}

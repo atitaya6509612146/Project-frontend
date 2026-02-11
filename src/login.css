@@ -1,0 +1,244 @@
+@font-face {
+  font-family: 'Suez One';
+  src: url('./assets/fonts/SuezOne-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Text'),
+    local('SukhumvitSet-Text'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Bold'),
+    local('SukhumvitSet-Bold'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --title-font: 'Suez One', serif;
+  --body-font: 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --soft-white: #f3f3f3;
+  --button-color: #2e6b4f;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--soft-white);
+  font-family: var(--body-font);
+  background:
+    radial-gradient(70% 70% at 15% 10%, rgba(241, 192, 206, 0.65) 0%, rgba(241, 192, 206, 0) 65%),
+    radial-gradient(65% 65% at 88% 88%, rgba(236, 184, 198, 0.58) 0%, rgba(236, 184, 198, 0) 60%),
+    radial-gradient(80% 80% at 50% 45%, rgba(170, 194, 176, 0.86) 0%, rgba(161, 186, 169, 0.86) 60%, rgba(151, 176, 160, 0.82) 100%),
+    #c8ccc4;
+}
+
+.login-header {
+  position: absolute;
+  top: 44px;
+  left: 68px;
+  font-family: var(--title-font);
+  font-size: clamp(30px, 3.2vw, 40px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.login-panel {
+  width: min(440px, calc(100% - 56px));
+  margin: 0;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.login-title {
+  margin: 0 0 44px;
+  font-family: var(--title-font);
+  font-size: clamp(50px, 8vw, 70px);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.login-form {
+  width: min(437px, 100%);
+}
+
+.login-form .ant-form-item {
+  margin-bottom: 30px;
+}
+
+.login-form .ant-form-item-control-input {
+  min-height: auto;
+}
+
+.login-form .ant-form-item-explain,
+.login-form .ant-form-item-explain-error {
+  text-align: left;
+}
+
+.login-form .ant-input,
+.login-form .ant-input-affix-wrapper {
+  height: 50px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(248, 248, 248, 0.92);
+  box-shadow: none;
+  font-family: var(--body-font);
+  font-size: clamp(14px, 1.6vw, 16px);
+  color: #5f6161;
+  padding-inline: 14px;
+}
+
+.login-form .ant-input-affix-wrapper > input.ant-input {
+  height: 100%;
+  padding: 0;
+}
+
+.login-form .ant-input::placeholder,
+.login-form .ant-input-affix-wrapper input::placeholder {
+  color: #a9a9a9;
+}
+
+.login-form .ant-input:focus,
+.login-form .ant-input-focused,
+.login-form .ant-input-affix-wrapper-focused,
+.login-form .ant-input-affix-wrapper:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.login-submit-wrap {
+  margin-top: 50px;
+  margin-bottom: 6px;
+}
+
+.login-submit-btn {
+  width: 132px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #4a5759 !important;
+  border-color: transparent !important;
+  font-family: var(--body-font);
+  font-size: clamp(16px, 1.9vw, 18px);
+  font-weight: 700;
+  color: #f2f4f4;
+}
+
+.login-submit-btn.ant-btn:hover,
+.login-submit-btn.ant-btn:focus-visible {
+  background: #394547 !important;
+  border-color: transparent !important;
+  box-shadow: none;
+  outline: none;
+  color: #ffffff;
+}
+
+.login-submit-btn.ant-btn:active {
+  background: #394547 !important;
+  border-color: transparent !important;
+  color: #ffffff;
+}
+
+.login-page .ant-btn,
+.login-page .ant-btn:hover,
+.login-page .ant-btn:active,
+.login-page .ant-btn:focus,
+.login-page .ant-btn:focus-visible,
+.login-page .ant-input,
+.login-page .ant-input:focus,
+.login-page .ant-input-affix-wrapper,
+.login-page .ant-input-affix-wrapper:focus,
+.login-page .ant-input-affix-wrapper-focused {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.login-alt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--body-font);
+}
+
+.login-alt span {
+  font-size: clamp(11px, 1.2vw, 12px);
+  color: rgba(245, 245, 245, 0.8);
+}
+
+.login-alt a {
+  font-size: clamp(14px, 1.7vw, 16px);
+  font-family: var(--body-font);
+  font-weight: 700;
+  color: #f2f2f2;
+  text-decoration: underline;
+}
+
+.login-alt a:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .login-header {
+    top: 20px;
+    left: 24px;
+  }
+
+  .login-panel {
+    width: min(390px, calc(100% - 32px));
+    padding-top: 0;
+  }
+
+  .login-title {
+    margin-bottom: 38px;
+  }
+
+  .login-form .ant-form-item {
+    margin-bottom: 20px;
+  }
+
+  .login-submit-wrap {
+    margin-top: 30px;
+    margin-bottom: 6px;
+  }
+
+  .login-form .ant-input,
+  .login-form .ant-input-affix-wrapper {
+    height: 38px;
+  }
+
+  .login-submit-btn {
+    width: 142px;
+    height: 50px;
+  }
+
+  .login-alt {
+    gap: 4px;
+    margin-top: 8px;
+  }
+}

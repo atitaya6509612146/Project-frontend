@@ -3,6 +3,7 @@ import { LeftCircleOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Form, Input } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
 import './signup.css'
+import { saveSignupProfile } from './lib/user-profile'
 
 type SignupFormValues = {
   email: string
@@ -16,6 +17,7 @@ function Signup() {
 
   const handleFinish = (values: SignupFormValues) => {
     console.log('signup submit', values)
+    saveSignupProfile(values)
     setIsSubmitted(true)
   }
 

@@ -5,8 +5,15 @@
 }
 
 .app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
   height: 70px;
   background: #c2c3c4;
+  border: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,6 +37,8 @@
 .app-footer-goal-btn.ant-btn:active {
   background: #e65b83 !important;
   border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #ffffff;
 }
 

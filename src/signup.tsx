@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { LeftCircleOutlined } from '@ant-design/icons'
-import { Button, ConfigProvider, Form, Input } from 'antd'
+import { Alert, Button, ConfigProvider, Form, Input, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
+import { ApiError, createUser } from './api'
 import './signup.css'
 import { saveSignupProfile } from './lib/user-profile'
 
@@ -12,13 +13,31 @@ type SignupFormValues = {
 }
 
 function Signup() {
+  const [form] = Form.useForm<SignupFormValues>()
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const navigate = useNavigate()
 
-  const handleFinish = (values: SignupFormValues) => {
-    console.log('signup submit', values)
-    saveSignupProfile(values)
-    setIsSubmitted(true)
+  const handleFinish = async (values: SignupFormValues) => {
+    setIsSubmitting(true)
+    setErrorMessage('')
+
+    try {
+      const response = await createUser(values)
+      saveSignupProfile(values)
+      setIsSubmitted(true)
+      form.resetFields(['password'])
+      message.success(response.message || 'Sign up successful')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message || 'Unable to sign up')
+      } else {
+        setErrorMessage('Unable to sign up')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -50,7 +69,15 @@ function Signup() {
 
             <h1 className="signup-title">HELLO !</h1>
 
-            <Form className="signup-form" layout="vertical" requiredMark={false} onFinish={handleFinish}>
+            <Form
+              form={form}
+              className="signup-form"
+              layout="vertical"
+              requiredMark={false}
+              onFinish={handleFinish}
+            >
+              {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
+
               <Form.Item
                 name="email"
                 className="signup-item full-row"
@@ -104,7 +131,7 @@ function Signup() {
               </Form.Item>
 
               <Form.Item className="signup-submit-wrap">
-                <Button type="primary" htmlType="submit" className="signup-submit-btn">
+                <Button type="primary" htmlType="submit" className="signup-submit-btn" loading={isSubmitting}>
                   Sign up
                 </Button>
               </Form.Item>

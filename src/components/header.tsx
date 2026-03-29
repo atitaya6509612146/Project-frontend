@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserOutlined } from '@ant-design/icons'
+import { useLang } from '../hooks/useLang'
 import './header.css'
 
 type HomeTab = 'progress' | 'goals' | 'stats'
@@ -12,11 +12,11 @@ type HeaderProps = {
 
 function Header({ activeTab, onTabChange }: HeaderProps) {
   const navigate = useNavigate()
-  const [language, setLanguage] = useState<'EN' | 'TH'>('EN')
+  const { lang, setLang, t } = useLang()
 
   return (
     <header className="top-nav">
-      <div className="top-nav-logo">logo</div>
+      <div className="top-nav-logo">{t('header.logo')}</div>
 
       <nav className="top-nav-menu" aria-label="Main navigation">
         <button
@@ -24,44 +24,44 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
           className={`top-nav-link top-nav-tab-button${activeTab === 'progress' ? ' top-nav-link-active' : ''}`}
           onClick={() => onTabChange('progress')}
         >
-          YOUR PROGRESS
+          {t('header.progress')}
         </button>
         <button
           type="button"
           className={`top-nav-link top-nav-tab-button${activeTab === 'goals' ? ' top-nav-link-active' : ''}`}
           onClick={() => onTabChange('goals')}
         >
-          YOUR GOALS
+          {t('header.goals')}
         </button>
         <button
           type="button"
           className={`top-nav-link top-nav-tab-button${activeTab === 'stats' ? ' top-nav-link-active' : ''}`}
           onClick={() => onTabChange('stats')}
         >
-          STATISTICS
+          {t('header.stats')}
         </button>
       </nav>
 
       <div className="top-nav-tools">
-        <div className="top-nav-lang" role="group" aria-label="Language switch">
+        <div className="top-nav-lang" role="group" aria-label={t('header.language')}>
           <button
             type="button"
-            className={`top-nav-lang-option${language === 'EN' ? ' top-nav-lang-option-active' : ''}`}
-            aria-pressed={language === 'EN'}
-            onClick={() => setLanguage('EN')}
+            className={`top-nav-lang-option${lang === 'en' ? ' top-nav-lang-option-active' : ''}`}
+            aria-pressed={lang === 'en'}
+            onClick={() => setLang('en')}
           >
             EN
           </button>
           <button
             type="button"
-            className={`top-nav-lang-option${language === 'TH' ? ' top-nav-lang-option-active' : ''}`}
-            aria-pressed={language === 'TH'}
-            onClick={() => setLanguage('TH')}
+            className={`top-nav-lang-option${lang === 'th' ? ' top-nav-lang-option-active' : ''}`}
+            aria-pressed={lang === 'th'}
+            onClick={() => setLang('th')}
           >
             TH
           </button>
         </div>
-        <button type="button" className="top-nav-user" aria-label="User profile" onClick={() => navigate('/user')}>
+        <button type="button" className="top-nav-user" aria-label={t('header.userProfile')} onClick={() => navigate('/user')}>
           <UserOutlined />
         </button>
       </div>

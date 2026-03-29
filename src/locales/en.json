@@ -1,0 +1,9 @@
+{
+  "header.logo": "logo",
+  "header.progress": "YOUR PROGRESS",
+  "header.goals": "YOUR GOALS",
+  "header.stats": "STATISTICS",
+  "header.language": "Language switch",
+  "header.userProfile": "User profile",
+  "footer.addGoal": "Add your goal!"
+}

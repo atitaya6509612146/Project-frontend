@@ -1,4 +1,5 @@
 import { Button } from 'antd'
+import { useLang } from '../hooks/useLang'
 import './footer.css'
 
 type FooterProps = {
@@ -6,10 +7,12 @@ type FooterProps = {
 }
 
 function Footer({ onAddGoal }: FooterProps) {
+  const { t } = useLang()
+
   return (
     <footer className="app-footer">
       <Button type="primary" className="app-footer-goal-btn" onClick={onAddGoal}>
-        Add your goal!
+        {t('footer.addGoal')}
       </Button>
     </footer>
   )

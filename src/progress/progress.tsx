@@ -4,8 +4,8 @@ import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import Header, { type HomeTab } from '../components/header'
 import Footer from '../components/footer'
-import birdImage from '../assets/bird.png'
-import catImage from '../assets/cat.png'
+import birdImage from '../assets/bird3.png'
+import catImage from '../assets/cat3.png'
 import './progress.css'
 
 type GoalItem = {

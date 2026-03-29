@@ -6,19 +6,22 @@ import Login from './login.tsx'
 import Signup from './signup.tsx'
 import UserPage from './user.tsx'
 import ProgressPage from './progress/progress.tsx'
+import { LangProvider } from './hooks/useLang.tsx'
 import 'antd/dist/reset.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={<ProgressPage />} />
-        <Route path="/user" element={<UserPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <LangProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/home" element={<ProgressPage />} />
+          <Route path="/user" element={<UserPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </LangProvider>
   </StrictMode>,
 )

@@ -24,8 +24,9 @@ function Signup() {
     setErrorMessage('')
 
     try {
-      const response = await createUser(values)
-      saveSignupProfile(values)
+      const createPayload = { ...values, level: 1, exp: 0 }
+      const response = await createUser(createPayload)
+      saveSignupProfile(createPayload)
       setIsSubmitted(true)
       form.resetFields(['password'])
       message.success(response.message || 'Sign up successful')

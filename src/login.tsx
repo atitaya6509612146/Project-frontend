@@ -31,6 +31,8 @@ function Login() {
         userId,
         username: payload.username || values.username,
         token: payload.token,
+        level: typeof payload.level === 'number' ? payload.level : undefined,
+        exp: typeof payload.exp === 'number' ? payload.exp : undefined,
       })
       message.success(payload.message || 'Login successful')
       form.resetFields(['password'])

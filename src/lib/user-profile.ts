@@ -9,6 +9,8 @@ export type UserProfile = {
   age: string
   email: string
   username: string
+  level: number
+  exp: number
   password: string
 }
 
@@ -16,12 +18,16 @@ type SignupPayload = {
   email: string
   username: string
   password: string
+  level?: number
+  exp?: number
 }
 
 type UserDetailsPayload = {
   email?: string
   username?: string
   password?: string
+  level?: number
+  exp?: number
 }
 
 type LoginPayload = {
@@ -29,6 +35,8 @@ type LoginPayload = {
   token?: string
   username: string
   password: string
+  level?: number
+  exp?: number
 }
 
 const STORAGE_KEY = 'app_user_profile'
@@ -44,6 +52,8 @@ const defaultProfile: UserProfile = {
   age: '-',
   email: '-',
   username: '-',
+  level: 1,
+  exp: 0,
   password: '',
 }
 
@@ -91,6 +101,8 @@ export const saveSignupProfile = (payload: SignupPayload) => {
     ...previous,
     email: payload.email,
     username: payload.username,
+    level: payload.level ?? previous.level,
+    exp: payload.exp ?? previous.exp,
     password: payload.password,
     nickname: payload.username || previous.nickname,
   }
@@ -105,6 +117,8 @@ export const saveLoginProfile = (payload: LoginPayload) => {
     password: payload.password || previous.password,
     userId: payload.userId || previous.userId,
     token: payload.token || previous.token,
+    level: payload.level ?? previous.level,
+    exp: payload.exp ?? previous.exp,
   }
   writeProfile(merged)
 }
@@ -116,6 +130,8 @@ export const saveUserDetailsProfile = (payload: UserDetailsPayload) => {
     email: payload.email || previous.email,
     username: payload.username || previous.username,
     password: payload.password || previous.password,
+    level: payload.level ?? previous.level,
+    exp: payload.exp ?? previous.exp,
   }
   writeProfile(merged)
 }

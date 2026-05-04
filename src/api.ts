@@ -33,6 +33,8 @@ export type LoginResponse = ApiMessageResponse & {
   userId?: string | number
   username?: string
   token?: string
+  level?: number
+  exp?: number
   [key: string]: unknown
 }
 
@@ -41,24 +43,130 @@ export type UserResponse = {
   email?: string
   username?: string
   password?: string
+  level?: number
+  exp?: number
   [key: string]: unknown
+}
+
+export type ActivityCategoryResponse = {
+  id: number
+  category_name: string
+}
+
+export type CreateUserGoalPayload = {
+  id: number
+  user_id: number
+  category_id: number
+  title: string
+  description: string
+  difficulty: string
+  points: number
+  is_active: boolean
+  frequency_type: string
+  start_date?: string
+  end_date?: string
+  create_date: string
+  update_date: string
+}
+
+export type UpdateUserGoalPayload = {
+  user_id: number
+  category_id: number
+  title: string
+  description: string
+  difficulty: string
+  points: number
+  is_active: boolean
+  frequency_type: string
+  start_date?: string
+  end_date?: string
+}
+
+export type UserGoalResponse = ApiMessageResponse & {
+  id?: number
+  user_id?: number
+  category_id?: number
+  title?: string
+  description?: string
+  difficulty?: string
+  points?: number
+  is_active?: boolean
+  frequency_type?: string
+  start_date?: string
+  end_date?: string
+  create_date?: string
+  update_date?: string
+  [key: string]: unknown
+}
+
+export type GoalHistoryResponse = ApiMessageResponse & {
+  id?: number
+  goal_id?: number
+  user_id?: number
+  finish_date?: string
+  is_completed?: boolean
+  create_date?: string
+  update_date?: string
+  [key: string]: unknown
+}
+
+export type GoalHistoryChartParams = {
+  userid: string | number
+  year: string | number
+  month: string | number
+  categoryid: string | number
+}
+
+export type GoalHistoryChartResponse = {
+  [key: string]: unknown
+} | unknown[]
+
+export type CreateGoalHistoryPayload = {
+  id: number
+  goal_id: number
+  user_id: number
+  finish_date: string
+  is_completed: boolean
+  create_date: string
+  update_date: string
+}
+
+export type UpdateGoalHistoryPayload = {
+  goal_id: number
+  user_id: number
+  finish_date: string
+  is_completed: boolean
 }
 
 export type UpdateUserPayload = {
   email: string
   username: string
   password: string
+  level: number
+  exp: number
 }
 
 export type CreateUserPayload = {
   email: string
   username: string
   password: string
+  level: number
+  exp: number
 }
 
 const API_BASE_URL = 'http://localhost:5057'
 
 const buildUrl = (path: string) => `${API_BASE_URL}${path}`
+
+const buildPathWithParams = (path: string, params: Record<string, string | number>) => {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    searchParams.set(key, String(value))
+  })
+
+  return `${path}?${searchParams.toString()}`
+}
 
 export const apiRequest = async <TResponse>(
   path: string,
@@ -130,3 +238,61 @@ export const deleteUserById = (id: string | number) =>
   apiRequest<ApiMessageResponse>(`/api/Users/${id}`, {
     method: 'DELETE',
   })
+
+export const getActivityCategories = () => apiRequest<ActivityCategoryResponse[]>('/api/ActivityCategories')
+
+export const getActivityCategoryById = (id: string | number) =>
+  apiRequest<ActivityCategoryResponse>(`/api/ActivityCategories/${id}`)
+
+export const createUserGoal = (payload: CreateUserGoalPayload) =>
+  apiRequest<UserGoalResponse>('/api/UserGoals', {
+    method: 'POST',
+    body: payload,
+  })
+
+export const getUserGoals = () => apiRequest<UserGoalResponse[]>('/api/UserGoals')
+
+export const getTodayUserGoals = (userid: string | number) =>
+  apiRequest<UserGoalResponse[]>(
+    buildPathWithParams('/api/UserGoals/today', {
+      userid,
+    }),
+  )
+
+export const updateUserGoalById = (id: string | number, payload: UpdateUserGoalPayload) =>
+  apiRequest<UserGoalResponse>(`/api/UserGoals/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+
+export const deleteUserGoalById = (id: string | number) =>
+  apiRequest<ApiMessageResponse>(`/api/UserGoals/${id}`, {
+    method: 'DELETE',
+  })
+
+export const getGoalHistories = () => apiRequest<GoalHistoryResponse[]>('/api/GoalHistories')
+
+export const getGoalHistoryById = (id: string | number) =>
+  apiRequest<GoalHistoryResponse>(`/api/GoalHistories/${id}`)
+
+export const createGoalHistory = (payload: CreateGoalHistoryPayload) =>
+  apiRequest<GoalHistoryResponse>('/api/GoalHistories', {
+    method: 'POST',
+    body: payload,
+  })
+
+export const updateGoalHistoryById = (id: string | number, payload: UpdateGoalHistoryPayload) =>
+  apiRequest<GoalHistoryResponse>(`/api/GoalHistories/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  })
+
+export const getGoalHistoryChart = ({ userid, year, month, categoryid }: GoalHistoryChartParams) =>
+  apiRequest<GoalHistoryChartResponse>(
+    buildPathWithParams('/api/GoalHistories/chart', {
+      userid,
+      year,
+      month,
+      categoryid,
+    }),
+  )

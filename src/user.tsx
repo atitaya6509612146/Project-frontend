@@ -11,6 +11,8 @@ type UserForm = {
   email: string
   username: string
   password: string
+  level: number
+  exp: number
 }
 
 type UserFormErrors = Partial<Record<keyof UserForm, string>>
@@ -30,11 +32,15 @@ function UserPage() {
     email: '',
     username: '',
     password: '',
+    level: 1,
+    exp: 0,
   })
   const [draft, setDraft] = useState<UserForm>({
     email: '',
     username: '',
     password: '',
+    level: 1,
+    exp: 0,
   })
 
   useEffect(() => {
@@ -57,10 +63,13 @@ function UserPage() {
           email: response.email || '-',
           username: response.username || '-',
           password: response.password || '******',
+          level: typeof response.level === 'number' ? response.level : storedProfile.level,
+          exp: typeof response.exp === 'number' ? response.exp : storedProfile.exp,
         }
 
         setUser(nextUser)
         setDraft(nextUser)
+        saveUserDetailsProfile(nextUser)
       } catch (error) {
         if (error instanceof ApiError) {
           setErrorMessage(error.message || 'Unable to load user data')
@@ -160,6 +169,8 @@ function UserPage() {
         email: response?.email || draft.email,
         username: response?.username || draft.username,
         password: response?.password || draft.password,
+        level: typeof response?.level === 'number' ? response.level : draft.level,
+        exp: typeof response?.exp === 'number' ? response.exp : draft.exp,
       }
 
       setUser(nextUser)

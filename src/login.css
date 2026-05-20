@@ -1,4 +1,3 @@
-/* ตั้งค่าฟอนต์และตัวแปรธีมของหน้า login */
 @font-face {
   font-family: 'Suez One';
   src: url('./assets/fonts/SuezOne-Regular.ttf') format('truetype');
@@ -38,7 +37,6 @@
   min-height: 100vh;
 }
 
-/* พื้นหลังหน้า login และขนาด panel ที่จัดกึ่งกลาง */
 .login-page {
   position: relative;
   min-height: 100vh;
@@ -85,7 +83,6 @@
   color: #ffffff;
 }
 
-/* ปรับสไตล์ form control ที่ครอบ input ของ Ant Design */
 .login-form {
   width: min(437px, 100%);
 }
@@ -139,7 +136,6 @@
   box-shadow: none;
 }
 
-/* พื้นที่ปุ่ม submit และลิงก์ไปหน้าทางเลือก */
 .login-submit-wrap {
   margin-top: 50px;
   margin-bottom: 6px;

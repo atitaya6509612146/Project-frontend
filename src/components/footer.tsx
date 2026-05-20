@@ -6,7 +6,6 @@ type FooterProps = {
   onAddGoal?: () => void
 }
 
-// แถบปุ่มด้านล่าง โดย parent เป็นคนกำหนดว่า add goal จะเปิดอะไร
 function Footer({ onAddGoal }: FooterProps) {
   const { t } = useLang()
 

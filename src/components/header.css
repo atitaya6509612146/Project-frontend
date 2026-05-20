@@ -1,4 +1,3 @@
-/* ประกาศฟอนต์ใน header เพื่อให้ component นี้ใช้งานได้ด้วยตัวเอง */
 @font-face {
   font-family: 'Suez One';
   src: url('../assets/fonts/SuezOne-Regular.ttf') format('truetype');
@@ -27,7 +26,6 @@
   font-display: swap;
 }
 
-/* โครงแถบนำทางด้านบนที่ใช้ร่วมกันในหน้าหลักของแอป */
 .top-nav {
   height: 70px;
   background: #b0c4b1;
@@ -45,7 +43,6 @@
   line-height: 1;
 }
 
-/* ปุ่ม tab ทั้งสามอยู่ใน grid เพื่อให้ตำแหน่ง nav อยู่กึ่งกลาง */
 .top-nav-menu {
   flex: 1;
   max-width: 650px;
@@ -79,7 +76,6 @@
   background: rgba(130, 147, 132, 0.74);
 }
 
-/* ปุ่มเปลี่ยนภาษาและปุ่มโปรไฟล์ผู้ใช้ด้านขวา */
 .top-nav-tools {
   display: flex;
   align-items: center;

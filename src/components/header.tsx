@@ -10,7 +10,6 @@ type HeaderProps = {
   onTabChange: (tab: HomeTab) => void
 }
 
-// แถบนำทางด้านบนที่ใช้ร่วมกันในหน้า home tabs และหน้า user
 function Header({ activeTab, onTabChange }: HeaderProps) {
   const navigate = useNavigate()
   const { lang, setLang, t } = useLang()
@@ -19,7 +18,6 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
     <header className="top-nav">
       <div className="top-nav-logo">{t('header.logo')}</div>
 
-      {/* ปุ่ม tab ใช้สลับเนื้อหาใน ProgressPage โดยไม่เปลี่ยน route */}
       <nav className="top-nav-menu" aria-label="Main navigation">
         <button
           type="button"
@@ -45,7 +43,6 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
       </nav>
 
       <div className="top-nav-tools">
-        {/* ปุ่มเปลี่ยนภาษาจะอัปเดตค่าใน LangProvider กลาง */}
         <div className="top-nav-lang" role="group" >
           <button
             type="button"
@@ -64,7 +61,6 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
             TH
           </button>
         </div>
-        {/* ไอคอนผู้ใช้พาไปหน้าข้อมูลบัญชี */}
         <button type="button" className="top-nav-user" onClick={() => navigate('/user')}>
           <UserOutlined />
         </button>

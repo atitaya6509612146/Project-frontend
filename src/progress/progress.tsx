@@ -3,7 +3,7 @@ import { Button, DatePicker, Modal, message } from 'antd'
 import { CloseOutlined, DeleteOutlined, EditOutlined, FireFilled } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { ApiError, createGoalHistory, createUserGoal, deleteUserGoalById, getActivityCategories, getActivityCategoryById, getGoalHistoryChart, getTodayUserGoals, getUserById, getUserPets, getUserStreak, updateUserGoalById, updateUserPets, type ActivityCategoryResponse, type GoalHistoryChartResponse, type UserGoalResponse } from '../api'
+import { ApiError, createGoalHistory, createUserGoal, deleteUserGoalById, getActivityCategories, getActivityCategoryById, getGoalHistoryChart, getTodayUserGoals, getUserById, getUserPets, getUserStreak, updateGoalHistoryById, updateUserGoalById, updateUserPets, type ActivityCategoryResponse, type GoalHistoryChartResponse, type UserGoalResponse } from '../api'
 import Header, { type HomeTab } from '../components/header'
 import Footer from '../components/footer'
 import { useLang, type Lang } from '../hooks/useLang'
@@ -16,7 +16,6 @@ import catImage3 from '../assets/cat3.png'
 import { getStoredUserProfile, saveUserDetailsProfile } from '../lib/user-profile'
 import './progress.css'
 
-// การ์ด goal จะถูกจัดกลุ่มตามหมวดหมู่กิจกรรมก่อนแสดงผล
 type GoalItem = {
   id: string
   label: string
@@ -65,13 +64,10 @@ type StatsChartData = {
   labels: string[]
   series: Record<StatsSeriesKey, number[]>
 }
-
-// ค่าคงที่กลางสำหรับตัวเลือกวันที่ แถบ level และค่า default ของ filter
 const { RangePicker } = DatePicker
 const LEVEL_PROGRESS_MAX = 100
 const ALL_CATEGORIES_VALUE = 'all'
 
-// เลือกรูป pet แต่ละ stage ตาม level ของผู้ใช้
 const petImagesByLevel = {
   bird: {
     1: birdImage1,
@@ -95,7 +91,6 @@ const resolvePetStage = (level: number) => {
   return 3
 }
 
-// รองรับทั้งค่า pet แบบ string ตรงๆ และ object จาก API เช่น { pets: "bird" }
 const resolvePetType = (value: unknown): PetType | null => {
   if (value === 'bird' || value === 'cat') {
     return value
@@ -109,7 +104,12 @@ const resolvePetType = (value: unknown): PetType | null => {
   return null
 }
 
-// หมวดหมู่สำรองทำให้ UI ยังใช้งานได้ระหว่างรอ API หรือเมื่อ API ใช้ไม่ได้
+const resolveTodayHistoryId = (goal: UserGoalResponse): number | null => {
+  const candidate = goal.today_history_id
+  const parsed = typeof candidate === 'number' || typeof candidate === 'string' ? Number(candidate) : NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
 const fallbackCategoryOptions: ActivityCategoryOption[] = [
   { id: 1, categoryId: 'education', label: 'Education' },
   { id: 2, categoryId: 'health', label: 'Health & Wellness' },
@@ -121,7 +121,6 @@ const fallbackModalCategoryOptions: ModalActivityCategoryOption[] = fallbackCate
   label: category.label,
 }))
 
-// สร้างกราฟเปล่าพร้อมแกน x ให้ตรงกับโหมดสถิติที่เลือก
 const createEmptyStatsChartData = (year: number, month: number, mode: StatsMode): StatsChartData => {
   if (mode === 'weekly') {
     return {
@@ -162,7 +161,6 @@ const createEmptyStatsChartData = (year: number, month: number, mode: StatsMode)
   }
 }
 
-// แปลงชื่อหมวดหมู่จาก API ให้เข้ากับกลุ่มหมวดหมู่ภายในแอป
 const resolveGoalCategoryId = (categoryName: string): GoalCategoryId | null => {
   const normalized = categoryName.trim().toLowerCase()
 
@@ -181,7 +179,6 @@ const resolveGoalCategoryId = (categoryName: string): GoalCategoryId | null => {
   return null
 }
 
-// ชื่อหมวดหมู่แสดงตามภาษาที่เลือก และ fallback เป็นภาษาอังกฤษ
 const getActivityCategoryLabel = (category: ActivityCategoryResponse, lang: Lang) => {
   if (lang === 'th') {
     return category.category_name_th?.trim() || category.category_name
@@ -190,7 +187,6 @@ const getActivityCategoryLabel = (category: ActivityCategoryResponse, lang: Lang
   return category.category_name
 }
 
-// สีไฟ streak จะเข้มขึ้นตามจำนวนวันที่ทำต่อเนื่อง
 const resolveStreakColor = (streakCount: number) => {
   if (streakCount >= 30) {
     return '#ff2f00'
@@ -210,8 +206,6 @@ const resolveStreakColor = (streakCount: number) => {
 
 function ProgressPage() {
   const { lang, t } = useLang()
-
-  // state ฝั่ง UI สำหรับ tab ที่เลือก การเปิด modal และช่องฟอร์ม add/edit
   const [activeTab, setActiveTab] = useState<HomeTab>('progress')
   const [isPetModalOpen, setIsPetModalOpen] = useState(false)
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false)
@@ -238,8 +232,6 @@ function ProgressPage() {
   const [checkedGoals, setCheckedGoals] = useState<Record<string, boolean>>(
     {},
   )
-
-  // ข้อมูล progress เริ่มจาก cache ในเครื่อง เพื่อให้ render แรกมีค่าที่เหมาะสม
   const [username, setUsername] = useState(() => {
     const storedProfile = getStoredUserProfile()
     return storedProfile.username && storedProfile.username !== '-' ? storedProfile.username : 'User'
@@ -255,7 +247,6 @@ function ProgressPage() {
   const [activityCategories, setActivityCategories] = useState(fallbackCategoryOptions)
   const [modalActivityCategories, setModalActivityCategories] = useState(fallbackModalCategoryOptions)
 
-  // วันที่ใน header ใช้ timezone ของ browser และคงที่ตลอด render นี้
   const currentDate = useMemo(
     () =>
       new Intl.DateTimeFormat('en-GB', {
@@ -267,8 +258,6 @@ function ProgressPage() {
   )
   const currentYear = new Date().getFullYear()
   const currentMonthIndex = new Date().getMonth()
-
-  // filter สถิติแยกค่าที่เลือกกับค่าที่ใช้จริง เพื่อให้ label เปลี่ยนหลังค้นหา
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_VALUE)
   const [selectedYear, setSelectedYear] = useState<number>(currentYear)
   const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[currentMonthIndex])
@@ -281,8 +270,6 @@ function ProgressPage() {
   const [statsChartData, setStatsChartData] = useState<StatsChartData>(() =>
     createEmptyStatsChartData(currentYear, currentMonthIndex + 1, 'daily'),
   )
-
-  // ค่าที่คำนวณจาก state สำหรับ filter, stage ของ pet, progress bar และสี streak
   const availableMonths = selectedYear < currentYear ? monthOptions : monthOptions.slice(0, currentMonthIndex + 1)
   const categoryLabel =
     appliedCategory === ALL_CATEGORIES_VALUE
@@ -296,8 +283,6 @@ function ProgressPage() {
   const activePetStage = resolvePetStage(safeLevel)
   const activePetImage = currentPet ? petImagesByLevel[currentPet][activePetStage] : undefined
   const streakColor = resolveStreakColor(streakCount)
-
-  // แปลง goal แบบรายการจาก API เป็น section ตามหมวดหมู่สำหรับ tab "Your Goals"
   const goalGroupsState = useMemo<GoalGroup[]>(() => {
     const groupsMap = new Map<string, GoalGroup>()
 
@@ -338,8 +323,6 @@ function ProgressPage() {
 
     return Array.from(groupsMap.values())
   }, [activityCategories, modalActivityCategories, userGoals])
-
-  // คำนวณ scale ของกราฟจาก series ที่เลือก เพื่อให้ tick อ่านง่าย
   const maxChartValue = useMemo(() => {
     const values =
       statsMode === 'daily'
@@ -387,7 +370,6 @@ function ProgressPage() {
     return Array.from({ length: activeStatsSeries.length }, (_, index) => String(index + 1).padStart(2, '0'))
   }, [activeStatsSeries.length, statsChartData.labels, statsMode])
 
-  // ก่อนผู้ใช้กดค้นหา ให้กราฟ placeholder sync กับ filter ที่เลือกไว้
   useEffect(() => {
     if (!hasSearchedStats) {
       const monthIndex = monthOptions.findIndex((month) => month === selectedMonth)
@@ -397,7 +379,6 @@ function ProgressPage() {
     }
   }, [hasSearchedStats, selectedMonth, selectedYear, statsMode])
 
-  // response กราฟจาก API อาจเป็น array, object ซ้อน หรือ named series จึง normalize ก่อนใช้
   const normalizeChartSeries = (value: unknown): number[] => {
     if (!Array.isArray(value)) {
       return []
@@ -554,7 +535,6 @@ function ProgressPage() {
     }
   }
 
-  // แปลงค่ากราฟที่ normalize แล้วเป็นพิกัด polyline และจุดใน SVG
   const createPolylinePoints = (values: number[]) => {
     if (values.length === 0) {
       return ''
@@ -592,7 +572,6 @@ function ProgressPage() {
     }))
   }
 
-  // ดึง username, level และ exp ล่าสุดจาก user endpoint
   const refreshUserProgress = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = storedProfile.userId
@@ -624,7 +603,6 @@ function ProgressPage() {
     }
   }
 
-  // โหลดจำนวน streak สำหรับแสดงข้างไอคอนไฟ
   const refreshUserStreak = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = storedProfile.userId
@@ -644,13 +622,11 @@ function ProgressPage() {
     }
   }
 
-  // โหลด progress และ streak ครั้งแรกเมื่อเปิดหน้า
   useEffect(() => {
     void refreshUserProgress()
     void refreshUserStreak()
   }, [])
 
-  // โหลด pet/character ที่ผู้ใช้เลือกจาก endpoint ของ user
   useEffect(() => {
     const storedProfile = getStoredUserProfile()
     const userId = storedProfile.userId
@@ -677,7 +653,6 @@ function ProgressPage() {
     void loadUserPet()
   }, [])
 
-  // sync ข้อมูล progress อีกครั้งเมื่อผู้ใช้กลับมาที่ tab progress
   useEffect(() => {
     if (activeTab === 'progress') {
       void refreshUserProgress()
@@ -685,7 +660,6 @@ function ProgressPage() {
     }
   }, [activeTab])
 
-  // โหลดหมวดหมู่ใหม่เมื่อภาษาเปลี่ยน เพื่อให้ใช้ category_name_th ได้
   useEffect(() => {
     const loadActivityCategories = async () => {
       try {
@@ -726,7 +700,6 @@ function ProgressPage() {
     void loadActivityCategories()
   }, [lang])
 
-  // goal รายวันยึดข้อมูลจาก /today เป็นหลัก รวมถึงสถานะทำสำเร็จของวันนี้
   const refreshTodayGoals = async (showLoading = true) => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
@@ -764,12 +737,10 @@ function ProgressPage() {
     }
   }
 
-  // โหลด goal ของวันนี้ครั้งแรกเมื่อเปิดหน้า
   useEffect(() => {
     void refreshTodayGoals()
   }, [])
 
-  // บันทึก goal ว่าสำเร็จในวันนี้ แล้วโหลดรายการวันนี้จาก backend ซ้ำ
   const handleToggleGoalHistory = async (goalId: string, categoryId: string, nextChecked: boolean) => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
@@ -791,6 +762,17 @@ function ProgressPage() {
           user_id: userId,
           is_completed: true,
         })
+      } else {
+        const targetGoal = userGoals.find((goal) => String(goal.id) === goalId && String(goal.category_id) === categoryId)
+        const todayHistoryId = targetGoal ? resolveTodayHistoryId(targetGoal) : null
+
+        if (!todayHistoryId) {
+          throw new Error('Today history id is required before unchecking a goal')
+        }
+
+        await updateGoalHistoryById(todayHistoryId, {
+          is_completed: false,
+        })
       }
       await refreshTodayGoals(false)
       void refreshUserProgress()
@@ -811,7 +793,6 @@ function ProgressPage() {
     }
   }
 
-  // helper สำหรับ modal เลือก pet
   const handleOpenPetModal = () => {
     setSelectedPet(currentPet ?? 'bird')
     setIsPetModalOpen(true)
@@ -843,7 +824,6 @@ function ProgressPage() {
     }
   }
 
-  // การค้นหาสถิติจะสร้าง query กราฟจาก filter ที่เลือก
   const handleSearchStats = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
@@ -900,7 +880,6 @@ function ProgressPage() {
     }
   }
 
-  // แปลงข้อความแต้มกลับเป็น difficulty เมื่อต้องแก้ไข goal เดิม
   const resolveDifficultyFromPoints = (points: string): GoalDifficulty => {
     if (points.includes('+30')) {
       return 'hard'
@@ -914,7 +893,6 @@ function ProgressPage() {
   const resolveNumericPointsFromDifficulty = (difficulty: GoalDifficulty): number =>
     difficulty === 'hard' ? 30 : difficulty === 'medium' ? 20 : 10
 
-  // ตั้งค่า modal goal สำหรับโหมดเพิ่มและโหมดแก้ไข
   const handleOpenAddGoalModal = () => {
     setGoalModalMode('add')
     setEditingGoalRef(null)
@@ -957,7 +935,6 @@ function ProgressPage() {
     setIsAddGoalModalOpen(true)
   }
 
-  // ตรวจข้อมูลและส่ง payload สำหรับเพิ่มหรือแก้ไข goal
   const handleConfirmGoalModal = async () => {
     const selectedCategory = modalActivityCategories.find((category) => String(category.id) === selectedActivityCategoryId)
     const resolvedGoalCategory =
@@ -1085,7 +1062,6 @@ function ProgressPage() {
     setIsAddGoalModalOpen(false)
   }
 
-  // ลบ goal ที่กำลังแก้ไข และลบสถานะ checkbox ในเครื่อง
   const handleDeleteGoal = async () => {
     if (goalModalMode !== 'edit' || !editingGoalRef) {
       return
@@ -1122,7 +1098,6 @@ function ProgressPage() {
 
       <main className="progress-main">
         {activeTab === 'progress' ? (
-          // tab progress แสดงคำทักทาย streak, pet, level และ exp ปัจจุบัน
           <section className="progress-card">
             <div className="progress-head-row">
               <h1 className="progress-greeting">
@@ -1171,7 +1146,6 @@ function ProgressPage() {
             )}
           </section>
         ) : activeTab === 'goals' ? (
-          // tab goals แสดง goal ของวันนี้จาก backend พร้อม checkbox สถานะสำเร็จ
           <section className="goals-tab">
             <h1 className="goals-heading">{t('progress.goalsToday')}</h1>
 
@@ -1225,7 +1199,6 @@ function ProgressPage() {
             </div>
           </section>
         ) : (
-          // tab statistics ให้ผู้ใช้กรองข้อมูลกราฟตามหมวดหมู่ เดือน และปี
           <section className="stats-tab">
             <h1 className="stats-heading">{t('progress.statistics')}</h1>
 
@@ -1392,7 +1365,6 @@ function ProgressPage() {
       </main>
       <Footer onAddGoal={handleOpenAddGoalModal} />
       {isAddGoalModalOpen ? (
-        // modal เพิ่ม/แก้ไข goal ใช้ฟอร์มร่วมกัน และเปลี่ยนพฤติกรรมตาม goalModalMode
         <div className="goal-modal-overlay" role="dialog" aria-modal="true" aria-label={t('progress.addGoal')}>
           <div className="goal-modal-card">
             <button
@@ -1551,7 +1523,6 @@ function ProgressPage() {
           </div>
         </div>
       ) : null}
-      {/* modal ยืนยันการลบใช้ Ant Design Modal เพื่อจัด focus และตำแหน่งกลางจอ */}
       <Modal
         open={isDeleteGoalModalOpen}
         footer={null}
@@ -1604,7 +1575,6 @@ function ProgressPage() {
         </div>
       </Modal>
       {activeTab === 'progress' && isPetModalOpen ? (
-        // ตัวเลือก pet แสดงเฉพาะตอนอยู่ใน tab progress
         <div className="pet-modal-overlay" role="dialog" aria-modal="true" aria-label={t('progress.choosePet')}>
           <div className="pet-modal-card">
             <div className="pet-option-list">

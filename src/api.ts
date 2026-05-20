@@ -1,13 +1,11 @@
 import { getStoredAuthToken } from './lib/user-profile'
 
-// ประเภทข้อมูลและตัวเลือก fetch กลางที่ helper API ด้านล่างใช้ร่วมกัน
 export type ApiRequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   headers?: HeadersInit
 }
 
-// รูปแบบ error กลางของ API พร้อม status และ payload ที่ parse แล้ว
 export class ApiError extends Error {
   status: number
   payload: unknown
@@ -158,9 +156,6 @@ export type CreateGoalHistoryPayload = {
 }
 
 export type UpdateGoalHistoryPayload = {
-  goal_id: number
-  user_id: number
-  finish_date: string
   is_completed: boolean
 }
 
@@ -184,7 +179,6 @@ const API_BASE_URL = 'http://localhost:5057'
 
 const buildUrl = (path: string) => `${API_BASE_URL}${path}`
 
-// สร้าง query string สำหรับ GET endpoint ที่มี filter parameters
 const buildPathWithParams = (path: string, params: Record<string, string | number>) => {
   const searchParams = new URLSearchParams()
 
@@ -195,7 +189,6 @@ const buildPathWithParams = (path: string, params: Record<string, string | numbe
   return `${path}?${searchParams.toString()}`
 }
 
-// wrapper กลางของ fetch: ใส่ token/header/body, parse response และโยน ApiError เมื่อ request ล้มเหลว
 export const apiRequest = async <TResponse>(
   path: string,
   { method = 'GET', body, headers }: ApiRequestOptions = {},
@@ -242,7 +235,6 @@ export const apiRequest = async <TResponse>(
   return ((payload ?? {}) as TResponse)
 }
 
-// endpoint สำหรับ auth และบัญชีผู้ใช้
 export const login = (payload: LoginPayload) =>
   apiRequest<LoginResponse>('/api/Login', {
     method: 'POST',
@@ -280,7 +272,6 @@ export const deleteUserById = (id: string | number) =>
     method: 'DELETE',
   })
 
-// endpoint หมวดหมู่และ goal ที่หน้า progress/goals/statistics ใช้
 export const getActivityCategories = () => apiRequest<ActivityCategoryResponse[]>('/api/ActivityCategories')
 
 export const getActivityCategoryById = (id: string | number) =>
@@ -312,7 +303,6 @@ export const deleteUserGoalById = (id: string | number) =>
     method: 'DELETE',
   })
 
-// endpoint ประวัติ goal สำหรับบันทึกการทำสำเร็จและโหลดข้อมูลกราฟ
 export const getGoalHistories = () => apiRequest<GoalHistoryResponse[]>('/api/GoalHistories')
 
 export const getGoalHistoryById = (id: string | number) =>

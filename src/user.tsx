@@ -45,7 +45,6 @@ function UserPage() {
     exp: 0,
   })
 
-  // โหลดโปรไฟล์ล่าสุดก่อน render ฟอร์ม เพื่อไม่ให้ช่อง input กระพริบเป็นค่าว่าง
   useEffect(() => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
@@ -99,7 +98,6 @@ function UserPage() {
     setIsEditing(false)
   }
 
-  // validation กลางสำหรับการแก้ไขในฟอร์มและขั้นตอนยืนยันการบันทึก
   const validateField = (field: keyof UserForm, value: string): string => {
     if (field === 'username') {
       if (!value.trim()) {
@@ -148,7 +146,6 @@ function UserPage() {
     return nextErrors
   }
 
-  // ทำงานหลังผู้ใช้ยืนยัน modal บันทึก แล้วส่ง draft ที่แก้ไขไปยัง API
   const confirmSaveEdit = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
@@ -194,7 +191,6 @@ function UserPage() {
     }
   }
 
-  // sync ค่า draft และข้อความ validation ระหว่างแก้ไขข้อมูล
   const onChangeField = (field: keyof UserForm, value: string) => {
     setErrorMessage('')
     setDraft((prev) => ({ ...prev, [field]: value }))
@@ -209,7 +205,6 @@ function UserPage() {
     })
   }
 
-  // เปิด modal ยืนยันเฉพาะเมื่อ draft ปัจจุบันผ่าน validation
   const handleSaveEdit = () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
@@ -234,7 +229,6 @@ function UserPage() {
     navigate('/login')
   }
 
-  // การลบบัญชีต้องผ่าน modal ยืนยันก่อนเสมอ
   const handleDeleteAccount = () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
@@ -295,7 +289,6 @@ function UserPage() {
             <>
               {errorMessage ? <p className="user-status user-status-error">{errorMessage}</p> : null}
 
-              {/* ค่าเริ่มต้นเป็น read-only และเปลี่ยนเป็น draft ที่แก้ไขได้เมื่อเข้า edit mode */}
               <div className="user-form-grid">
                 <div className="user-field">
                   <label className="user-label">{t('user.email')}</label>
@@ -354,7 +347,6 @@ function UserPage() {
                 </div>
               </div>
 
-              {/* ปุ่มหลักจะเปลี่ยนตามสถานะว่าฟอร์มอยู่ใน edit mode หรือไม่ */}
               <div className="user-actions">
                 {isEditing ? (
                   <>
@@ -411,7 +403,6 @@ function UserPage() {
         onCancel={() => setIsSaveModalOpen(false)}
         className="user-delete-modal"
       >
-        {/* modal ยืนยันการบันทึกช่วยกันการอัปเดตโปรไฟล์โดยไม่ตั้งใจ */}
         <div className="user-delete-modal-body">
           <button
             type="button"
@@ -461,7 +452,6 @@ function UserPage() {
         }}
         className="user-delete-modal"
       >
-        {/* modal ยืนยันการลบช่วยกันการลบบัญชีโดยไม่ตั้งใจ */}
         <div className="user-delete-modal-body">
           <button
             type="button"

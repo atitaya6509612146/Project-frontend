@@ -19,7 +19,6 @@ const messagesByLang: Record<Lang, Messages> = {
   th,
 }
 
-// context กลางสำหรับสถานะภาษาและ helper ค้นหาคำแปล
 const LangContext = createContext<LangContextValue | null>(null)
 
 const applyDocumentLang = (lang: Lang) => {
@@ -41,7 +40,6 @@ const getInitialLang = (): Lang => {
   return initialLang
 }
 
-// ครอบแอปเพื่อให้ทุกหน้าอ่านหรือเปลี่ยนภาษาได้ผ่าน useLang()
 function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(getInitialLang)
 
@@ -55,7 +53,6 @@ function LangProvider({ children }: { children: ReactNode }) {
   }, [lang])
 
   const value = useMemo<LangContextValue>(() => {
-    // ถ้าไม่มี key แปลภาษา จะแสดงชื่อ key เพื่อให้เห็นข้อความที่ยังไม่ได้แปล
     const t = (key: string) => messagesByLang[lang][key] || key
 
     return {

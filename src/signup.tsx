@@ -19,7 +19,6 @@ function Signup() {
   const [errorMessage, setErrorMessage] = useState('')
   const navigate = useNavigate()
 
-  // สร้างผู้ใช้ใหม่พร้อม level/exp เริ่มต้น แล้วแสดงหน้าสมัครสำเร็จ
   const handleFinish = async (values: SignupFormValues) => {
     setIsSubmitting(true)
     setErrorMessage('')
@@ -64,7 +63,6 @@ function Signup() {
           </main>
         ) : (
           <main className="signup-card">
-            {/* ฟอร์มสมัครใช้ validation ของ Ant Design สำหรับ required และความยาวข้อมูล */}
             <Link className="signup-back" to="/login" aria-label="Back to login">
               <LeftCircleOutlined />
               <span>Already have an account?</span>

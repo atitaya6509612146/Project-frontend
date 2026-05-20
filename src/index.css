@@ -1,4 +1,3 @@
-/* ลงทะเบียนฟอนต์กลางที่ใช้ได้ทุกหน้า */
 @font-face {
   font-family: 'SukhumvitSet';
   src:
@@ -30,7 +29,6 @@
   size-adjust: 112%;
 }
 
-/* ปรับ box sizing และขนาด root ให้เป็นฐานเดียวกัน */
 * {
   box-sizing: border-box;
 }
@@ -47,13 +45,11 @@ body {
   min-height: 100vh;
 }
 
-/* ฟอนต์เริ่มต้นของแอป: ใช้ Itim ทุกที่ ยกเว้นช่องกรอกข้อมูล */
 body,
 body *:not(input):not(textarea):not(select):not(option) {
   font-family: 'Itim', 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 
-/* ปรับ typography แยกตามภาษาที่เลือก */
 html[lang='en'] body,
 html[lang='en'] body *:not(input):not(textarea):not(select):not(option) {
   font-weight: 600;

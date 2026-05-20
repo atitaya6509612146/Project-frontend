@@ -41,6 +41,7 @@ type LoginPayload = {
 
 const STORAGE_KEY = 'app_user_profile'
 
+// ค่าเริ่มต้นเมื่อยังไม่มีข้อมูลโปรไฟล์ใน localStorage
 const defaultProfile: UserProfile = {
   userId: '',
   token: '',
@@ -83,6 +84,7 @@ const writeProfile = (profile: UserProfile) => {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
 }
 
+// ล้างข้อมูล auth/profile ที่เก็บไว้ในเครื่องตอน logout หรือลบบัญชี
 export const clearStoredUserProfile = () => {
   if (typeof window === 'undefined') {
     return
@@ -95,6 +97,7 @@ export const getStoredUserProfile = (): UserProfile => readProfile()
 
 export const getStoredAuthToken = (): string => readProfile().token
 
+// เก็บข้อมูลโปรไฟล์ชุดแรกหลังสมัคร ก่อนผู้ใช้กลับไปล็อกอินอีกครั้ง
 export const saveSignupProfile = (payload: SignupPayload) => {
   const previous = readProfile()
   const merged: UserProfile = {
@@ -109,6 +112,7 @@ export const saveSignupProfile = (payload: SignupPayload) => {
   writeProfile(merged)
 }
 
+// เก็บข้อมูลล็อกอินและค่าความคืบหน้าที่ API ส่งกลับมา
 export const saveLoginProfile = (payload: LoginPayload) => {
   const previous = readProfile()
   const merged: UserProfile = {
@@ -123,6 +127,7 @@ export const saveLoginProfile = (payload: LoginPayload) => {
   writeProfile(merged)
 }
 
+// อัปเดตข้อมูลโปรไฟล์จาก server โดยไม่ลบข้อมูล auth เดิม
 export const saveUserDetailsProfile = (payload: UserDetailsPayload) => {
   const previous = readProfile()
   const merged: UserProfile = {

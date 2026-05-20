@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, DatePicker, Modal, message } from 'antd'
-import { CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { CloseOutlined, DeleteOutlined, EditOutlined, FireFilled } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { ApiError, createGoalHistory, createUserGoal, deleteUserGoalById, getActivityCategories, getActivityCategoryById, getGoalHistories, getGoalHistoryChart, getTodayUserGoals, getUserById, updateGoalHistoryById, updateUserGoalById, type GoalHistoryChartResponse, type GoalHistoryResponse, type UserGoalResponse } from '../api'
+import { ApiError, createGoalHistory, createUserGoal, deleteUserGoalById, getActivityCategories, getActivityCategoryById, getGoalHistoryChart, getTodayUserGoals, getUserById, getUserPets, getUserStreak, updateUserGoalById, updateUserPets, type ActivityCategoryResponse, type GoalHistoryChartResponse, type UserGoalResponse } from '../api'
 import Header, { type HomeTab } from '../components/header'
 import Footer from '../components/footer'
+import { useLang, type Lang } from '../hooks/useLang'
 import birdImage1 from '../assets/bird1.png'
 import birdImage2 from '../assets/bird2.png'
 import birdImage3 from '../assets/bird3.png'
@@ -15,6 +16,7 @@ import catImage3 from '../assets/cat3.png'
 import { getStoredUserProfile, saveUserDetailsProfile } from '../lib/user-profile'
 import './progress.css'
 
+// การ์ด goal จะถูกจัดกลุ่มตามหมวดหมู่กิจกรรมก่อนแสดงผล
 type GoalItem = {
   id: string
   label: string
@@ -53,7 +55,6 @@ type PetType = 'bird' | 'cat'
 type GoalCategoryId = 'education' | 'health' | 'other'
 type ActivityCategoryOption = { id: number; categoryId: GoalCategoryId; label: string }
 type ModalActivityCategoryOption = { id: number; label: string }
-const PET_STORAGE_KEY = 'selectedPet'
 type GoalFrequency = 'daily' | 'weekday' | 'weekend' | 'custom'
 type GoalDifficulty = 'easy' | 'medium' | 'hard'
 type GoalModalMode = 'add' | 'edit'
@@ -64,9 +65,13 @@ type StatsChartData = {
   labels: string[]
   series: Record<StatsSeriesKey, number[]>
 }
+
+// ค่าคงที่กลางสำหรับตัวเลือกวันที่ แถบ level และค่า default ของ filter
 const { RangePicker } = DatePicker
 const LEVEL_PROGRESS_MAX = 100
+const ALL_CATEGORIES_VALUE = 'all'
 
+// เลือกรูป pet แต่ละ stage ตาม level ของผู้ใช้
 const petImagesByLevel = {
   bird: {
     1: birdImage1,
@@ -90,6 +95,21 @@ const resolvePetStage = (level: number) => {
   return 3
 }
 
+// รองรับทั้งค่า pet แบบ string ตรงๆ และ object จาก API เช่น { pets: "bird" }
+const resolvePetType = (value: unknown): PetType | null => {
+  if (value === 'bird' || value === 'cat') {
+    return value
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const payload = value as { pets?: unknown; pet?: unknown }
+    return resolvePetType(payload.pets ?? payload.pet)
+  }
+
+  return null
+}
+
+// หมวดหมู่สำรองทำให้ UI ยังใช้งานได้ระหว่างรอ API หรือเมื่อ API ใช้ไม่ได้
 const fallbackCategoryOptions: ActivityCategoryOption[] = [
   { id: 1, categoryId: 'education', label: 'Education' },
   { id: 2, categoryId: 'health', label: 'Health & Wellness' },
@@ -101,6 +121,7 @@ const fallbackModalCategoryOptions: ModalActivityCategoryOption[] = fallbackCate
   label: category.label,
 }))
 
+// สร้างกราฟเปล่าพร้อมแกน x ให้ตรงกับโหมดสถิติที่เลือก
 const createEmptyStatsChartData = (year: number, month: number, mode: StatsMode): StatsChartData => {
   if (mode === 'weekly') {
     return {
@@ -141,6 +162,7 @@ const createEmptyStatsChartData = (year: number, month: number, mode: StatsMode)
   }
 }
 
+// แปลงชื่อหมวดหมู่จาก API ให้เข้ากับกลุ่มหมวดหมู่ภายในแอป
 const resolveGoalCategoryId = (categoryName: string): GoalCategoryId | null => {
   const normalized = categoryName.trim().toLowerCase()
 
@@ -159,7 +181,37 @@ const resolveGoalCategoryId = (categoryName: string): GoalCategoryId | null => {
   return null
 }
 
+// ชื่อหมวดหมู่แสดงตามภาษาที่เลือก และ fallback เป็นภาษาอังกฤษ
+const getActivityCategoryLabel = (category: ActivityCategoryResponse, lang: Lang) => {
+  if (lang === 'th') {
+    return category.category_name_th?.trim() || category.category_name
+  }
+
+  return category.category_name
+}
+
+// สีไฟ streak จะเข้มขึ้นตามจำนวนวันที่ทำต่อเนื่อง
+const resolveStreakColor = (streakCount: number) => {
+  if (streakCount >= 30) {
+    return '#ff2f00'
+  }
+  if (streakCount >= 14) {
+    return '#ff6a00'
+  }
+  if (streakCount >= 7) {
+    return '#ff9f1c'
+  }
+  if (streakCount > 0) {
+    return '#ffc53d'
+  }
+
+  return '#b8b8b8'
+}
+
 function ProgressPage() {
+  const { lang, t } = useLang()
+
+  // state ฝั่ง UI สำหรับ tab ที่เลือก การเปิด modal และช่องฟอร์ม add/edit
   const [activeTab, setActiveTab] = useState<HomeTab>('progress')
   const [isPetModalOpen, setIsPetModalOpen] = useState(false)
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false)
@@ -176,20 +228,18 @@ function ProgressPage() {
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null)
   const [isSavingGoal, setIsSavingGoal] = useState(false)
   const [isDeletingGoal, setIsDeletingGoal] = useState(false)
+  const [isPetLoading, setIsPetLoading] = useState(true)
+  const [isSavingPet, setIsSavingPet] = useState(false)
   const [isGoalsLoading, setIsGoalsLoading] = useState(false)
   const [userGoals, setUserGoals] = useState<UserGoalResponse[]>([])
-  const [goalHistories, setGoalHistories] = useState<GoalHistoryResponse[]>([])
   const [updatingGoalHistoryKeys, setUpdatingGoalHistoryKeys] = useState<Record<string, boolean>>({})
-  const [currentPet, setCurrentPet] = useState<PetType | null>(() => {
-    if (typeof window === 'undefined') {
-      return null
-    }
-    const savedPet = window.localStorage.getItem(PET_STORAGE_KEY)
-    return savedPet === 'bird' || savedPet === 'cat' ? savedPet : null
-  })
+  const [currentPet, setCurrentPet] = useState<PetType | null>(null)
+  const [streakCount, setStreakCount] = useState(0)
   const [checkedGoals, setCheckedGoals] = useState<Record<string, boolean>>(
     {},
   )
+
+  // ข้อมูล progress เริ่มจาก cache ในเครื่อง เพื่อให้ render แรกมีค่าที่เหมาะสม
   const [username, setUsername] = useState(() => {
     const storedProfile = getStoredUserProfile()
     return storedProfile.username && storedProfile.username !== '-' ? storedProfile.username : 'User'
@@ -205,6 +255,7 @@ function ProgressPage() {
   const [activityCategories, setActivityCategories] = useState(fallbackCategoryOptions)
   const [modalActivityCategories, setModalActivityCategories] = useState(fallbackModalCategoryOptions)
 
+  // วันที่ใน header ใช้ timezone ของ browser และคงที่ตลอด render นี้
   const currentDate = useMemo(
     () =>
       new Intl.DateTimeFormat('en-GB', {
@@ -216,10 +267,12 @@ function ProgressPage() {
   )
   const currentYear = new Date().getFullYear()
   const currentMonthIndex = new Date().getMonth()
-  const [selectedCategory, setSelectedCategory] = useState<string>(String(fallbackModalCategoryOptions[0]?.id ?? ''))
+
+  // filter สถิติแยกค่าที่เลือกกับค่าที่ใช้จริง เพื่อให้ label เปลี่ยนหลังค้นหา
+  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_VALUE)
   const [selectedYear, setSelectedYear] = useState<number>(currentYear)
   const [selectedMonth, setSelectedMonth] = useState<string>(monthOptions[currentMonthIndex])
-  const [appliedCategory, setAppliedCategory] = useState<string>(String(fallbackModalCategoryOptions[0]?.id ?? ''))
+  const [appliedCategory, setAppliedCategory] = useState<string>(ALL_CATEGORIES_VALUE)
   const [appliedYear, setAppliedYear] = useState<number>(currentYear)
   const [appliedMonth, setAppliedMonth] = useState<string>(monthOptions[currentMonthIndex])
   const [isStatsLoading, setIsStatsLoading] = useState(false)
@@ -228,14 +281,23 @@ function ProgressPage() {
   const [statsChartData, setStatsChartData] = useState<StatsChartData>(() =>
     createEmptyStatsChartData(currentYear, currentMonthIndex + 1, 'daily'),
   )
+
+  // ค่าที่คำนวณจาก state สำหรับ filter, stage ของ pet, progress bar และสี streak
   const availableMonths = selectedYear < currentYear ? monthOptions : monthOptions.slice(0, currentMonthIndex + 1)
-  const categoryLabel = modalActivityCategories.find((category) => String(category.id) === appliedCategory)?.label || 'Others'
+  const categoryLabel =
+    appliedCategory === ALL_CATEGORIES_VALUE
+      ? t('progress.allCategories')
+      : modalActivityCategories.find((category) => String(category.id) === appliedCategory)?.label || 'Others'
+  const appliedMonthLabel = t(`progress.month.${appliedMonth.toLowerCase()}`)
   const safeLevel = level > 0 ? level : 1
   const safeExp = exp >= 0 ? exp : 0
   const currentLevelExp = safeExp % LEVEL_PROGRESS_MAX
   const levelProgressPercent = (currentLevelExp / LEVEL_PROGRESS_MAX) * 100
   const activePetStage = resolvePetStage(safeLevel)
   const activePetImage = currentPet ? petImagesByLevel[currentPet][activePetStage] : undefined
+  const streakColor = resolveStreakColor(streakCount)
+
+  // แปลง goal แบบรายการจาก API เป็น section ตามหมวดหมู่สำหรับ tab "Your Goals"
   const goalGroupsState = useMemo<GoalGroup[]>(() => {
     const groupsMap = new Map<string, GoalGroup>()
 
@@ -276,6 +338,8 @@ function ProgressPage() {
 
     return Array.from(groupsMap.values())
   }, [activityCategories, modalActivityCategories, userGoals])
+
+  // คำนวณ scale ของกราฟจาก series ที่เลือก เพื่อให้ tick อ่านง่าย
   const maxChartValue = useMemo(() => {
     const values =
       statsMode === 'daily'
@@ -323,6 +387,7 @@ function ProgressPage() {
     return Array.from({ length: activeStatsSeries.length }, (_, index) => String(index + 1).padStart(2, '0'))
   }, [activeStatsSeries.length, statsChartData.labels, statsMode])
 
+  // ก่อนผู้ใช้กดค้นหา ให้กราฟ placeholder sync กับ filter ที่เลือกไว้
   useEffect(() => {
     if (!hasSearchedStats) {
       const monthIndex = monthOptions.findIndex((month) => month === selectedMonth)
@@ -332,6 +397,7 @@ function ProgressPage() {
     }
   }, [hasSearchedStats, selectedMonth, selectedYear, statsMode])
 
+  // response กราฟจาก API อาจเป็น array, object ซ้อน หรือ named series จึง normalize ก่อนใช้
   const normalizeChartSeries = (value: unknown): number[] => {
     if (!Array.isArray(value)) {
       return []
@@ -488,6 +554,7 @@ function ProgressPage() {
     }
   }
 
+  // แปลงค่ากราฟที่ normalize แล้วเป็นพิกัด polyline และจุดใน SVG
   const createPolylinePoints = (values: number[]) => {
     if (values.length === 0) {
       return ''
@@ -525,6 +592,7 @@ function ProgressPage() {
     }))
   }
 
+  // ดึง username, level และ exp ล่าสุดจาก user endpoint
   const refreshUserProgress = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = storedProfile.userId
@@ -556,23 +624,75 @@ function ProgressPage() {
     }
   }
 
+  // โหลดจำนวน streak สำหรับแสดงข้างไอคอนไฟ
+  const refreshUserStreak = async () => {
+    const storedProfile = getStoredUserProfile()
+    const userId = storedProfile.userId
+
+    if (!userId) {
+      setStreakCount(0)
+      return
+    }
+
+    try {
+      const response = await getUserStreak(userId)
+      setStreakCount(typeof response.streak_count === 'number' && response.streak_count > 0 ? response.streak_count : 0)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setStreakCount(0)
+      }
+    }
+  }
+
+  // โหลด progress และ streak ครั้งแรกเมื่อเปิดหน้า
   useEffect(() => {
     void refreshUserProgress()
+    void refreshUserStreak()
   }, [])
 
+  // โหลด pet/character ที่ผู้ใช้เลือกจาก endpoint ของ user
+  useEffect(() => {
+    const storedProfile = getStoredUserProfile()
+    const userId = storedProfile.userId
+
+    if (!userId) {
+      setIsPetLoading(false)
+      return
+    }
+
+    const loadUserPet = async () => {
+      try {
+        setIsPetLoading(true)
+        const response = await getUserPets(userId)
+        setCurrentPet(resolvePetType(response))
+      } catch (error) {
+        if (error instanceof ApiError) {
+          return
+        }
+      } finally {
+        setIsPetLoading(false)
+      }
+    }
+
+    void loadUserPet()
+  }, [])
+
+  // sync ข้อมูล progress อีกครั้งเมื่อผู้ใช้กลับมาที่ tab progress
   useEffect(() => {
     if (activeTab === 'progress') {
       void refreshUserProgress()
+      void refreshUserStreak()
     }
   }, [activeTab])
 
+  // โหลดหมวดหมู่ใหม่เมื่อภาษาเปลี่ยน เพื่อให้ใช้ category_name_th ได้
   useEffect(() => {
     const loadActivityCategories = async () => {
       try {
         const response = await getActivityCategories()
         const nextModalOptions: ModalActivityCategoryOption[] = response.map((item) => ({
           id: item.id,
-          label: item.category_name,
+          label: getActivityCategoryLabel(item, lang),
         }))
         const nextOptions = response
           .map((item) => {
@@ -585,15 +705,13 @@ function ProgressPage() {
             return {
               id: item.id,
               categoryId,
-              label: item.category_name,
+              label: getActivityCategoryLabel(item, lang),
             }
           })
           .filter((item): item is ActivityCategoryOption => item !== null)
 
         if (nextModalOptions.length > 0) {
           setModalActivityCategories(nextModalOptions)
-          setSelectedCategory((current) => current || String(nextModalOptions[0].id))
-          setAppliedCategory((current) => current || String(nextModalOptions[0].id))
         }
         if (nextOptions.length > 0) {
           setActivityCategories(nextOptions)
@@ -606,9 +724,10 @@ function ProgressPage() {
     }
 
     void loadActivityCategories()
-  }, [])
+  }, [lang])
 
-  useEffect(() => {
+  // goal รายวันยึดข้อมูลจาก /today เป็นหลัก รวมถึงสถานะทำสำเร็จของวันนี้
+  const refreshTodayGoals = async (showLoading = true) => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
 
@@ -616,73 +735,41 @@ function ProgressPage() {
       return
     }
 
-    const loadUserGoals = async () => {
-      try {
+    try {
+      if (showLoading) {
         setIsGoalsLoading(true)
-        const response = await getTodayUserGoals(userId)
-        const nextGoals = response.filter((goal) => Number(goal.user_id) === userId)
-        setUserGoals(nextGoals)
-        setCheckedGoals((prev) => {
-          const next = { ...prev }
-          nextGoals.forEach((goal) => {
-            if (goal.id !== undefined && goal.category_id !== undefined) {
-              next[`${goal.category_id}:${goal.id}`] = false
-            }
-          })
-          return next
+      }
+      const response = await getTodayUserGoals(userId)
+      const nextGoals = response.filter((goal) => goal.user_id === undefined || Number(goal.user_id) === userId)
+      setUserGoals(nextGoals)
+      setCheckedGoals(() => {
+        const next: Record<string, boolean> = {}
+        nextGoals.forEach((goal) => {
+          if (goal.id !== undefined && goal.category_id !== undefined) {
+            next[`${goal.category_id}:${goal.id}`] = Boolean(goal.is_completed_today ?? goal.is_completed)
+          }
         })
-      } catch (error) {
-        if (error instanceof ApiError) {
-          message.error(error.message || 'Unable to load goals')
-        } else {
-          message.error('Unable to load goals')
-        }
-      } finally {
+        return next
+      })
+    } catch (error) {
+      if (error instanceof ApiError) {
+        message.error(error.message || 'Unable to load goals')
+      } else {
+        message.error('Unable to load goals')
+      }
+    } finally {
+      if (showLoading) {
         setIsGoalsLoading(false)
       }
     }
+  }
 
-    void loadUserGoals()
+  // โหลด goal ของวันนี้ครั้งแรกเมื่อเปิดหน้า
+  useEffect(() => {
+    void refreshTodayGoals()
   }, [])
 
-  useEffect(() => {
-    const storedProfile = getStoredUserProfile()
-    const userId = Number(storedProfile.userId)
-
-    if (!Number.isFinite(userId) || userId <= 0) {
-      return
-    }
-
-    const loadGoalHistories = async () => {
-      try {
-        const response = await getGoalHistories()
-        const nextHistories = response.filter((history) => Number(history.user_id) === userId)
-        setGoalHistories(nextHistories)
-        setCheckedGoals((prev) => {
-          const next = { ...prev }
-          nextHistories.forEach((history) => {
-            if (history.goal_id !== undefined) {
-              const goal = userGoals.find((item) => item.id === history.goal_id)
-              const categoryId = goal?.category_id
-              if (categoryId !== undefined) {
-                next[`${categoryId}:${history.goal_id}`] = Boolean(history.is_completed)
-              }
-            }
-          })
-          return next
-        })
-      } catch (error) {
-        if (error instanceof ApiError) {
-          message.error(error.message || 'Unable to load goal histories')
-        } else {
-          message.error('Unable to load goal histories')
-        }
-      }
-    }
-
-    void loadGoalHistories()
-  }, [userGoals])
-
+  // บันทึก goal ว่าสำเร็จในวันนี้ แล้วโหลดรายการวันนี้จาก backend ซ้ำ
   const handleToggleGoalHistory = async (goalId: string, categoryId: string, nextChecked: boolean) => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
@@ -694,63 +781,20 @@ function ProgressPage() {
       return
     }
 
-    const nowIso = new Date().toISOString()
-    const existingHistory = goalHistories.find((history) => history.goal_id === numericGoalId)
-
     setUpdatingGoalHistoryKeys((prev) => ({ ...prev, [key]: true }))
     setCheckedGoals((prev) => ({ ...prev, [key]: nextChecked }))
 
     try {
-      if (existingHistory?.id !== undefined) {
-        const response = await updateGoalHistoryById(existingHistory.id, {
+      if (nextChecked) {
+        await createGoalHistory({
           goal_id: numericGoalId,
           user_id: userId,
-          finish_date: nowIso,
-          is_completed: nextChecked,
+          is_completed: true,
         })
-
-        setGoalHistories((prev) =>
-          prev.map((history) =>
-            history.id === existingHistory.id
-              ? {
-                  ...history,
-                  ...response,
-                  id: existingHistory.id,
-                  goal_id: numericGoalId,
-                  user_id: userId,
-                  finish_date: nowIso,
-                  is_completed: nextChecked,
-                }
-              : history,
-          ),
-        )
-        void refreshUserProgress()
-      } else {
-        const response = await createGoalHistory({
-          id: 0,
-          goal_id: numericGoalId,
-          user_id: userId,
-          finish_date: nowIso,
-          is_completed: nextChecked,
-          create_date: nowIso,
-          update_date: nowIso,
-        })
-
-        setGoalHistories((prev) => [
-          ...prev,
-          {
-            ...response,
-            id: typeof response.id === 'number' ? response.id : Date.now(),
-            goal_id: numericGoalId,
-            user_id: userId,
-            finish_date: nowIso,
-            is_completed: nextChecked,
-            create_date: nowIso,
-            update_date: nowIso,
-          },
-        ])
-        void refreshUserProgress()
       }
+      await refreshTodayGoals(false)
+      void refreshUserProgress()
+      void refreshUserStreak()
     } catch (error) {
       setCheckedGoals((prev) => ({ ...prev, [key]: !nextChecked }))
       if (error instanceof ApiError) {
@@ -767,21 +811,46 @@ function ProgressPage() {
     }
   }
 
+  // helper สำหรับ modal เลือก pet
   const handleOpenPetModal = () => {
     setSelectedPet(currentPet ?? 'bird')
     setIsPetModalOpen(true)
   }
 
-  const handleConfirmPet = () => {
-    setCurrentPet(selectedPet)
-    window.localStorage.setItem(PET_STORAGE_KEY, selectedPet)
-    setIsPetModalOpen(false)
+  const handleConfirmPet = async () => {
+    const storedProfile = getStoredUserProfile()
+    const userId = storedProfile.userId
+
+    if (!userId) {
+      message.error('User id is required before choosing a pet')
+      return
+    }
+
+    try {
+      setIsSavingPet(true)
+      const response = await updateUserPets(userId, { pets: selectedPet })
+      setCurrentPet(resolvePetType(response) ?? selectedPet)
+      setIsPetModalOpen(false)
+      message.success(response.message || 'Pet saved successfully')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        message.error(error.message || 'Unable to save pet')
+      } else {
+        message.error('Unable to save pet')
+      }
+    } finally {
+      setIsSavingPet(false)
+    }
   }
 
+  // การค้นหาสถิติจะสร้าง query กราฟจาก filter ที่เลือก
   const handleSearchStats = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = Number(storedProfile.userId)
-    const selectedCategoryOption = modalActivityCategories.find((category) => String(category.id) === selectedCategory)
+    const isAllCategories = selectedCategory === ALL_CATEGORIES_VALUE
+    const selectedCategoryOption = isAllCategories
+      ? null
+      : modalActivityCategories.find((category) => String(category.id) === selectedCategory)
     const monthIndex = monthOptions.findIndex((month) => month === selectedMonth)
 
     if (!Number.isFinite(userId) || userId <= 0) {
@@ -789,7 +858,7 @@ function ProgressPage() {
       return
     }
 
-    if (!selectedCategoryOption) {
+    if (!isAllCategories && !selectedCategoryOption) {
       message.error('Please choose a category')
       return
     }
@@ -806,7 +875,7 @@ function ProgressPage() {
         userid: userId,
         year: selectedYear,
         month: monthIndex + 1,
-        categoryid: selectedCategoryOption.id,
+        categoryid: isAllCategories ? undefined : selectedCategoryOption?.id,
       })
       const nextChartData = parseGoalHistoryChartResponse(response)
 
@@ -831,6 +900,7 @@ function ProgressPage() {
     }
   }
 
+  // แปลงข้อความแต้มกลับเป็น difficulty เมื่อต้องแก้ไข goal เดิม
   const resolveDifficultyFromPoints = (points: string): GoalDifficulty => {
     if (points.includes('+30')) {
       return 'hard'
@@ -844,6 +914,7 @@ function ProgressPage() {
   const resolveNumericPointsFromDifficulty = (difficulty: GoalDifficulty): number =>
     difficulty === 'hard' ? 30 : difficulty === 'medium' ? 20 : 10
 
+  // ตั้งค่า modal goal สำหรับโหมดเพิ่มและโหมดแก้ไข
   const handleOpenAddGoalModal = () => {
     setGoalModalMode('add')
     setEditingGoalRef(null)
@@ -886,6 +957,7 @@ function ProgressPage() {
     setIsAddGoalModalOpen(true)
   }
 
+  // ตรวจข้อมูลและส่ง payload สำหรับเพิ่มหรือแก้ไข goal
   const handleConfirmGoalModal = async () => {
     const selectedCategory = modalActivityCategories.find((category) => String(category.id) === selectedActivityCategoryId)
     const resolvedGoalCategory =
@@ -910,6 +982,11 @@ function ProgressPage() {
       return
     }
 
+    if (!goalDifficulty) {
+      message.error('Please choose difficulty')
+      return
+    }
+
     if (isCustomFrequency && (!startDate || !endDate)) {
       message.error('Please choose start and end date for custom frequency')
       return
@@ -919,14 +996,12 @@ function ProgressPage() {
       return
     }
 
-    const difficulty: GoalDifficulty = goalDifficulty || 'easy'
+    const difficulty: GoalDifficulty = goalDifficulty
     const numericPoints = resolveNumericPointsFromDifficulty(difficulty)
 
     if (goalModalMode === 'edit' && editingGoalRef) {
       const storedProfile = getStoredUserProfile()
       const userId = Number(storedProfile.userId)
-      const oldKey = `${editingGoalRef.groupId}:${editingGoalRef.itemId}`
-      const newKey = `${selectedCategoryId}:${editingGoalRef.itemId}`
 
       if (!Number.isFinite(userId) || userId <= 0) {
         message.error('User id is required before editing a goal')
@@ -948,36 +1023,7 @@ function ProgressPage() {
           end_date: isCustomFrequency ? endDate : undefined,
         })
 
-        setUserGoals((prev) =>
-          prev.map((goal) =>
-            String(goal.id) === editingGoalRef.itemId
-              ? {
-                  ...goal,
-                  ...response,
-                  id: goal.id,
-                  user_id: userId,
-                  category_id: selectedCategoryId,
-                  title: goalName.trim(),
-                  description: goalDescription.trim(),
-                  difficulty,
-                  points: numericPoints,
-                  is_active: true,
-                  frequency_type: goalFrequency,
-                  start_date: isCustomFrequency ? startDate : undefined,
-                  end_date: isCustomFrequency ? endDate : undefined,
-                }
-              : goal,
-          ),
-        )
-
-        if (oldKey !== newKey) {
-          setCheckedGoals((prev) => {
-            const next = { ...prev, [newKey]: Boolean(prev[oldKey]) }
-            delete next[oldKey]
-            return next
-          })
-        }
-
+        await refreshTodayGoals(false)
         setIsAddGoalModalOpen(false)
         message.success(response.message || 'Goal updated successfully')
       } catch (error) {
@@ -1020,28 +1066,7 @@ function ProgressPage() {
           update_date: nowIso,
         })
 
-        const createdGoalId = typeof response.id === 'number' ? response.id : Date.now()
-        const newGoalId = String(createdGoalId)
-        setUserGoals((prev) => [
-          ...prev,
-          {
-            ...response,
-            id: createdGoalId,
-            user_id: userId,
-            category_id: selectedCategoryId,
-            title: goalName.trim(),
-            description: goalDescription.trim(),
-            difficulty,
-            points: numericPoints,
-            is_active: true,
-            frequency_type: goalFrequency,
-            start_date: isCustomFrequency ? startDate : undefined,
-            end_date: isCustomFrequency ? endDate : undefined,
-            create_date: nowIso,
-            update_date: nowIso,
-          },
-        ])
-        setCheckedGoals((prev) => ({ ...prev, [`${selectedCategoryId}:${newGoalId}`]: false }))
+        await refreshTodayGoals(false)
         setIsAddGoalModalOpen(false)
         message.success(response.message || 'Goal added successfully')
       } catch (error) {
@@ -1060,6 +1085,7 @@ function ProgressPage() {
     setIsAddGoalModalOpen(false)
   }
 
+  // ลบ goal ที่กำลังแก้ไข และลบสถานะ checkbox ในเครื่อง
   const handleDeleteGoal = async () => {
     if (goalModalMode !== 'edit' || !editingGoalRef) {
       return
@@ -1096,26 +1122,31 @@ function ProgressPage() {
 
       <main className="progress-main">
         {activeTab === 'progress' ? (
+          // tab progress แสดงคำทักทาย streak, pet, level และ exp ปัจจุบัน
           <section className="progress-card">
             <div className="progress-head-row">
               <h1 className="progress-greeting">
-                Hello!
+                {t('progress.greeting')}
                 <br />
                 {username}
               </h1>
+              <div className="progress-streak" aria-label="Current streak" style={{ color: streakColor }}>
+                <FireFilled />
+                <span>{streakCount}</span>
+              </div>
               <p className="progress-date">{currentDate}</p>
             </div>
 
             {currentPet ? (
               <>
                 <div className="progress-pet-stage">
-                  <img src={activePetImage} alt={`${currentPet} pet`} className="progress-pet-image" />
+                  <img src={activePetImage} alt={currentPet === 'bird' ? t('progress.birdPet') : t('progress.catPet')} className="progress-pet-image" />
                 </div>
 
                 <div className="progress-level-section">
-                  <h2 className="progress-level-title">YOUR LEVEL</h2>
+                  <h2 className="progress-level-title">{t('progress.levelTitle')}</h2>
                   <div className="progress-level-row">
-                    <span className="progress-level-label">Level {safeLevel}</span>
+                    <span className="progress-level-label">{t('progress.levelLabel')} {safeLevel}</span>
                     <div
                       className="progress-level-track"
                       role="progressbar"
@@ -1133,19 +1164,20 @@ function ProgressPage() {
               </>
             ) : (
               <div className="progress-action">
-                <Button type="primary" className="progress-pet-btn" onClick={handleOpenPetModal}>
-                  START YOUR PROGRESS
+                <Button type="primary" className="progress-pet-btn" onClick={handleOpenPetModal} loading={isPetLoading}>
+                  {t('progress.start')}
                 </Button>
               </div>
             )}
           </section>
         ) : activeTab === 'goals' ? (
+          // tab goals แสดง goal ของวันนี้จาก backend พร้อม checkbox สถานะสำเร็จ
           <section className="goals-tab">
-            <h1 className="goals-heading">YOUR GOALS TODAY!</h1>
+            <h1 className="goals-heading">{t('progress.goalsToday')}</h1>
 
-            <div className="goals-scroll" role="region" aria-label="Goals cards">
-              {isGoalsLoading ? <p className="user-status">Loading goals...</p> : null}
-              {!isGoalsLoading && goalGroupsState.length === 0 ? <p className="user-status">No goals found.</p> : null}
+            <div className={`goals-scroll${!isGoalsLoading && goalGroupsState.length === 0 ? ' goals-scroll-empty' : ''}`} role="region" aria-label={t('progress.goalsCards')}>
+              {isGoalsLoading ? <p className="goals-empty-message">{t('progress.loadingGoals')}</p> : null}
+              {!isGoalsLoading && goalGroupsState.length === 0 ? <p className="goals-empty-message">{t('progress.noGoals')}</p> : null}
               {goalGroupsState.map((group) => (
                 <article className="goal-card" key={group.id}>
                   <h2 className="goal-card-title">{group.title}</h2>
@@ -1193,8 +1225,9 @@ function ProgressPage() {
             </div>
           </section>
         ) : (
+          // tab statistics ให้ผู้ใช้กรองข้อมูลกราฟตามหมวดหมู่ เดือน และปี
           <section className="stats-tab">
-            <h1 className="stats-heading">STATISTICS</h1>
+            <h1 className="stats-heading">{t('progress.statistics')}</h1>
 
             <div className="stats-filters">
               <label className="stats-select-wrap">
@@ -1203,6 +1236,7 @@ function ProgressPage() {
                   value={selectedCategory}
                   onChange={(event) => setSelectedCategory(event.target.value)}
                 >
+                  <option value={ALL_CATEGORIES_VALUE}>{t('progress.allCategories')}</option>
                   {modalActivityCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.label}
@@ -1218,7 +1252,7 @@ function ProgressPage() {
                 >
                   {availableMonths.map((month) => (
                     <option key={month} value={month}>
-                      {month}
+                      {t(`progress.month.${month.toLowerCase()}`)}
                     </option>
                   ))}
                 </select>
@@ -1242,7 +1276,7 @@ function ProgressPage() {
                 </select>
               </label>
               <button type="button" className="stats-search-btn" onClick={() => void handleSearchStats()} disabled={isStatsLoading}>
-                {isStatsLoading ? 'loading...' : 'search'}
+                {isStatsLoading ? t('progress.loading') : t('progress.search')}
               </button>
             </div>
 
@@ -1250,7 +1284,7 @@ function ProgressPage() {
               <div className="stats-card-head">
                 <h2 className="stats-card-title">{categoryLabel}</h2>
                 <p className="stats-card-period">
-                  {appliedMonth} {appliedYear}
+                  {appliedMonthLabel} {appliedYear}
                 </p>
               </div>
 
@@ -1262,7 +1296,7 @@ function ProgressPage() {
                     onClick={() => setStatsMode('daily')}
                   >
                     <i className="stats-legend-dot stats-legend-dot-day" />
-                    Daily
+                    {t('progress.daily')}
                   </button>
                   <button
                     type="button"
@@ -1270,7 +1304,7 @@ function ProgressPage() {
                     onClick={() => setStatsMode('weekly')}
                   >
                     <i className="stats-legend-dot stats-legend-dot-week" />
-                    Weekly
+                    {t('progress.weekly')}
                   </button>
                   <button
                     type="button"
@@ -1278,12 +1312,12 @@ function ProgressPage() {
                     onClick={() => setStatsMode('monthly')}
                   >
                     <i className="stats-legend-dot stats-legend-dot-month" />
-                    Monthly
+                    {t('progress.monthly')}
                   </button>
                 </div>
 
                 <div className="stats-chart">
-                  <svg viewBox="0 0 760 300" className="stats-chart-svg" role="img" aria-label="Progress graph">
+                  <svg viewBox="0 0 760 300" className="stats-chart-svg" role="img" aria-label={t('progress.progressGraph')}>
                     <line x1="60" y1="30" x2="60" y2="250" className="stats-axis" />
                     <line x1="60" y1="250" x2="730" y2="250" className="stats-axis" />
 
@@ -1358,22 +1392,24 @@ function ProgressPage() {
       </main>
       <Footer onAddGoal={handleOpenAddGoalModal} />
       {isAddGoalModalOpen ? (
-        <div className="goal-modal-overlay" role="dialog" aria-modal="true" aria-label="Add your goal">
+        // modal เพิ่ม/แก้ไข goal ใช้ฟอร์มร่วมกัน และเปลี่ยนพฤติกรรมตาม goalModalMode
+        <div className="goal-modal-overlay" role="dialog" aria-modal="true" aria-label={t('progress.addGoal')}>
           <div className="goal-modal-card">
             <button
               type="button"
               className="goal-modal-close"
               onClick={() => setIsAddGoalModalOpen(false)}
-              aria-label="Close dialog"
+              aria-label={t('progress.closeDialog')}
               disabled={isSavingGoal || isDeletingGoal}
             >
               <CloseOutlined />
             </button>
-            <h2 className="goal-modal-title">{goalModalMode === 'edit' ? 'EDIT GOAL' : 'ADD GOAL'}</h2>
+            <h2 className="goal-modal-title">{goalModalMode === 'edit' ? t('progress.editGoal') : t('progress.addGoal')}</h2>
 
             <div className="goal-modal-field">
               <label htmlFor="goal-category" className="goal-modal-label">
-                Choose category
+                {t('progress.chooseCategory')}
+                <span className="goal-modal-required">*</span>
               </label>
               <select
                 id="goal-category"
@@ -1387,7 +1423,7 @@ function ProgressPage() {
                 }}
               >
                 <option value="" disabled>
-                  Select category
+                  {t('progress.selectCategory')}
                 </option>
                 {modalActivityCategories.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -1399,7 +1435,8 @@ function ProgressPage() {
 
             <div className="goal-modal-field">
               <label htmlFor="goal-name" className="goal-modal-label">
-                Activity name
+                {t('progress.activityName')}
+                <span className="goal-modal-required">*</span>
               </label>
               <input
                 id="goal-name"
@@ -1407,13 +1444,14 @@ function ProgressPage() {
                 type="text"
                 value={goalName}
                 onChange={(event) => setGoalName(event.target.value)}
-                placeholder="Type activity name"
+                placeholder={t('progress.activityNamePlaceholder')}
               />
             </div>
 
             <div className="goal-modal-field">
               <label htmlFor="goal-difficulty" className="goal-modal-label">
-                Choose difficulty
+                {t('progress.chooseDifficulty')}
+                <span className="goal-modal-required">*</span>
               </label>
               <select
                 id="goal-difficulty"
@@ -1422,17 +1460,18 @@ function ProgressPage() {
                 onChange={(event) => setGoalDifficulty(event.target.value as '' | 'easy' | 'medium' | 'hard')}
               >
                 <option value="" disabled>
-                  Select difficulty
+                  {t('progress.selectDifficulty')}
                 </option>
-                <option value="easy">Easy (+10 pts)</option>
-                <option value="medium">Medium (+20 pts)</option>
-                <option value="hard">Hard (+30 pts)</option>
+                <option value="easy">{t('progress.difficultyEasy')}</option>
+                <option value="medium">{t('progress.difficultyMedium')}</option>
+                <option value="hard">{t('progress.difficultyHard')}</option>
               </select>
             </div>
 
             <div className="goal-modal-field">
               <label htmlFor="goal-frequency" className="goal-modal-label">
-                Choose frequency
+                {t('progress.chooseFrequency')}
+                <span className="goal-modal-required">*</span>
               </label>
               <select
                 id="goal-frequency"
@@ -1441,19 +1480,20 @@ function ProgressPage() {
                 onChange={(event) => setGoalFrequency(event.target.value as '' | GoalFrequency)}
               >
                 <option value="" disabled>
-                  Select frequency
+                  {t('progress.selectFrequency')}
                 </option>
-                <option value="daily">Daily</option>
-                <option value="weekday">Weekday</option>
-                <option value="weekend">Weekend</option>
-                <option value="custom">Custom</option>
+                <option value="daily">{t('progress.frequencyDaily')}</option>
+                <option value="weekday">{t('progress.frequencyWeekday')}</option>
+                <option value="weekend">{t('progress.frequencyWeekend')}</option>
+                <option value="custom">{t('progress.frequencyCustom')}</option>
               </select>
             </div>
 
             {goalFrequency === 'custom' ? (
               <div className="goal-modal-field">
                 <label className="goal-modal-label" htmlFor="goal-custom-range">
-                  Choose date
+                  {t('progress.chooseDate')}
+                  <span className="goal-modal-required">*</span>
                 </label>
                 <RangePicker
                   id="goal-custom-range"
@@ -1461,7 +1501,7 @@ function ProgressPage() {
                   value={customDateRange}
                   onChange={(dates) => setCustomDateRange(dates)}
                   format="DD/MM/YYYY"
-                  placeholder={['Start date', 'End date']}
+                  placeholder={[t('progress.startDate'), t('progress.endDate')]}
                 />
               </div>
             ) : null}
@@ -1469,7 +1509,7 @@ function ProgressPage() {
             <div className="goal-modal-field">
               <div className="goal-modal-description-head">
                 <label htmlFor="goal-description" className="goal-modal-label">
-                  Description
+                  {t('progress.description')}
                 </label>
                 <span className="goal-modal-counter">{goalDescription.length}/50</span>
               </div>
@@ -1479,13 +1519,13 @@ function ProgressPage() {
                 maxLength={50}
                 value={goalDescription}
                 onChange={(event) => setGoalDescription(event.target.value)}
-                placeholder="Type description"
+                placeholder={t('progress.descriptionPlaceholder')}
               />
             </div>
 
             <div className="goal-modal-actions">
               <button type="button" className="goal-modal-cancel-btn" onClick={() => setIsAddGoalModalOpen(false)}>
-                Cancel
+                {t('progress.cancel')}
               </button>
               <button
                 type="button"
@@ -1493,7 +1533,7 @@ function ProgressPage() {
                 onClick={() => void handleConfirmGoalModal()}
                 disabled={isSavingGoal || isDeletingGoal}
               >
-                {isSavingGoal ? 'Saving...' : 'Confirm'}
+                {isSavingGoal ? t('progress.saving') : t('progress.confirm')}
               </button>
             </div>
 
@@ -1502,7 +1542,7 @@ function ProgressPage() {
                 type="button"
                 className="goal-modal-delete-btn"
                 onClick={() => setIsDeleteGoalModalOpen(true)}
-                aria-label="Delete goal"
+                aria-label={t('progress.deleteGoal')}
                 disabled={isSavingGoal || isDeletingGoal}
               >
                 <DeleteOutlined />
@@ -1511,6 +1551,7 @@ function ProgressPage() {
           </div>
         </div>
       ) : null}
+      {/* modal ยืนยันการลบใช้ Ant Design Modal เพื่อจัด focus และตำแหน่งกลางจอ */}
       <Modal
         open={isDeleteGoalModalOpen}
         footer={null}
@@ -1531,15 +1572,15 @@ function ProgressPage() {
             className="user-delete-modal-close"
             onClick={() => setIsDeleteGoalModalOpen(false)}
             disabled={isDeletingGoal}
-            aria-label="Close dialog"
+            aria-label={t('progress.closeDialog')}
           >
             <CloseOutlined />
           </button>
 
           <h2 className="user-delete-modal-title">
-            Do you really want to
+            {t('progress.deleteQuestion')}
             <br />
-            <span className="user-delete-modal-danger">delete</span> this goal?
+            <span className="user-delete-modal-danger">{t('progress.delete')}</span> {t('progress.thisGoal')}
           </h2>
 
           <div className="user-delete-modal-actions">
@@ -1549,7 +1590,7 @@ function ProgressPage() {
               onClick={() => void handleDeleteGoal()}
               disabled={isDeletingGoal}
             >
-              {isDeletingGoal ? '...' : 'YES'}
+              {isDeletingGoal ? '...' : t('progress.yes')}
             </button>
             <button
               type="button"
@@ -1557,13 +1598,14 @@ function ProgressPage() {
               onClick={() => setIsDeleteGoalModalOpen(false)}
               disabled={isDeletingGoal}
             >
-              CANCEL
+              {t('progress.cancel').toUpperCase()}
             </button>
           </div>
         </div>
       </Modal>
       {activeTab === 'progress' && isPetModalOpen ? (
-        <div className="pet-modal-overlay" role="dialog" aria-modal="true" aria-label="Choose your pet">
+        // ตัวเลือก pet แสดงเฉพาะตอนอยู่ใน tab progress
+        <div className="pet-modal-overlay" role="dialog" aria-modal="true" aria-label={t('progress.choosePet')}>
           <div className="pet-modal-card">
             <div className="pet-option-list">
               <label className={`pet-option${selectedPet === 'bird' ? ' pet-option-active' : ''}`}>
@@ -1572,9 +1614,10 @@ function ProgressPage() {
                   name="pet"
                   value="bird"
                   checked={selectedPet === 'bird'}
+                  disabled={isSavingPet}
                   onChange={() => setSelectedPet('bird')}
                 />
-                <img src={petImagesByLevel.bird[3]} alt="Bird pet" className="pet-option-image" />
+                <img src={petImagesByLevel.bird[3]} alt={t('progress.birdPet')} className="pet-option-image" />
               </label>
 
               <label className={`pet-option${selectedPet === 'cat' ? ' pet-option-active' : ''}`}>
@@ -1583,18 +1626,19 @@ function ProgressPage() {
                   name="pet"
                   value="cat"
                   checked={selectedPet === 'cat'}
+                  disabled={isSavingPet}
                   onChange={() => setSelectedPet('cat')}
                 />
-                <img src={petImagesByLevel.cat[3]} alt="Cat pet" className="pet-option-image" />
+                <img src={petImagesByLevel.cat[3]} alt={t('progress.catPet')} className="pet-option-image" />
               </label>
             </div>
 
             <div className="pet-modal-actions">
-              <button type="button" className="pet-cancel-btn" onClick={() => setIsPetModalOpen(false)}>
-                Cancel
+              <button type="button" className="pet-cancel-btn" onClick={() => setIsPetModalOpen(false)} disabled={isSavingPet}>
+                {t('progress.cancel')}
               </button>
-              <button type="button" className="pet-confirm-btn" onClick={handleConfirmPet}>
-                Confirm
+              <button type="button" className="pet-confirm-btn" onClick={handleConfirmPet} disabled={isSavingPet}>
+                {isSavingPet ? t('progress.saving') : t('progress.confirm')}
               </button>
             </div>
           </div>

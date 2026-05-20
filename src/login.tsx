@@ -13,6 +13,7 @@ function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
+  // ส่งข้อมูลล็อกอิน เก็บ auth/profile แล้วพาเข้าแอปหลัก
   const handleFinish = async (values: LoginFormValues) => {
     setIsSubmitting(true)
     setErrorMessage('')
@@ -64,6 +65,7 @@ function Login() {
         <main className="login-panel">
           <h1 className="login-title">LOGIN</h1>
 
+          {/* ฟอร์ม Ant Design ตรวจ required เบื้องต้นก่อนเรียก login() */}
           <Form
             form={form}
             className="login-form"
@@ -71,7 +73,7 @@ function Login() {
             requiredMark={false}
             onFinish={handleFinish}
           >
-            {errorMessage ? <Alert type="error" showIcon message={errorMessage} /> : null}
+            {errorMessage ? <Alert className="login-error-alert" type="error" showIcon message={errorMessage} /> : null}
 
             <Form.Item name="username" rules={[{ required: true, message: 'Please enter username' }]}> 
               <Input size="large" placeholder="Username" />

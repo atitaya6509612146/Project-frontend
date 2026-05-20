@@ -1,3 +1,4 @@
+/* ตั้งค่าฟอนต์และตัวแปรธีมของหน้า signup */
 @font-face {
   font-family: 'Suez One';
   src: url('./assets/fonts/SuezOne-Regular.ttf') format('truetype');
@@ -37,6 +38,7 @@
   --signup-btn-hover: #3d4b4f;
 }
 
+/* พื้นหลังเต็มหน้าของ signup และสถานะสมัครสำเร็จ */
 .signup-page {
   min-height: 100vh;
   padding: 28px 24px;
@@ -73,6 +75,7 @@
   line-height: 1;
 }
 
+/* การ์ดฟอร์ม ช่องกรอก และสไตล์ทับ input ของ Ant Design */
 .signup-card {
   width: min(750px, calc(100% - 28px));
   margin: clamp(16px, 3vh, 28px) auto;

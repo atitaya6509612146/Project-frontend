@@ -1,3 +1,4 @@
+/* ตั้งค่าฟอนต์ของหน้า user และ layout การ์ดบัญชี */
 @font-face {
   font-family: 'Suez One';
   src: url('./assets/fonts/SuezOne-Regular.ttf') format('truetype');
@@ -31,6 +32,7 @@
   align-items: flex-start;
 }
 
+/* การ์ดโปรไฟล์หลัก รวมถึงสถานะ loading และ error */
 .user-card {
   width: min(680px, 100%);
   min-height: 620px;
@@ -48,6 +50,7 @@
   line-height: 1;
 }
 
+/* ช่องฟอร์ม user, validation ในหน้า และปุ่มเปิด/ปิดรหัสผ่าน */
 .user-form-grid {
   display: grid;
   gap: 18px;
@@ -63,6 +66,17 @@
 .user-status-error {
   color: #b42318;
   font-weight: 700;
+}
+
+.user-loading-state {
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f5052;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .user-field {
@@ -163,8 +177,11 @@
 .user-password-icon {
   width: 20px;
   height: 20px;
+  color: #5a5d60;
+  font-size: 16px;
 }
 
+/* ปุ่ม action สำหรับ edit, save, delete และ logout */
 .user-actions {
   margin-top: 56px;
   display: flex;
@@ -227,6 +244,7 @@
   opacity: 0.6;
 }
 
+/* สไตล์ modal ยืนยันที่ใช้ร่วมกันใน flow บันทึกและลบ */
 .user-delete-modal .ant-modal-content {
   border-radius: 22px;
   background: #f2f2f2;

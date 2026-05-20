@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { CloseOutlined } from '@ant-design/icons'
+import { CloseOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons'
 import { Modal, message } from 'antd'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, deleteUserById, getUserById, updateUserById } from './api'
 import Header from './components/header'
+import { useLang } from './hooks/useLang'
 import { clearStoredUserProfile, getStoredUserProfile, saveUserDetailsProfile } from './lib/user-profile'
 import './user.css'
 
@@ -20,6 +21,7 @@ type UserFormErrors = Partial<Record<keyof UserForm, string>>
 function UserPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { t } = useLang()
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -43,12 +45,13 @@ function UserPage() {
     exp: 0,
   })
 
+  // โหลดโปรไฟล์ล่าสุดก่อน render ฟอร์ม เพื่อไม่ให้ช่อง input กระพริบเป็นค่าว่าง
   useEffect(() => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
 
     if (!userId) {
-      setErrorMessage('User id is required. Please login again or open this page with ?id=<userId>')
+      setErrorMessage(t('user.errorUserIdRequiredLoad'))
       setIsLoading(false)
       return
     }
@@ -72,9 +75,9 @@ function UserPage() {
         saveUserDetailsProfile(nextUser)
       } catch (error) {
         if (error instanceof ApiError) {
-          setErrorMessage(error.message || 'Unable to load user data')
+          setErrorMessage(error.message || t('user.errorLoad'))
         } else {
-          setErrorMessage('Unable to load user data')
+          setErrorMessage(t('user.errorLoad'))
         }
       } finally {
         setIsLoading(false)
@@ -82,7 +85,7 @@ function UserPage() {
     }
 
     void loadUser()
-  }, [searchParams])
+  }, [searchParams, t])
 
   const startEdit = () => {
     setDraft(user)
@@ -96,35 +99,36 @@ function UserPage() {
     setIsEditing(false)
   }
 
+  // validation กลางสำหรับการแก้ไขในฟอร์มและขั้นตอนยืนยันการบันทึก
   const validateField = (field: keyof UserForm, value: string): string => {
     if (field === 'username') {
       if (!value.trim()) {
-        return 'Please enter username'
+        return t('user.validationUsernameRequired')
       }
 
       if (value.length > 20) {
-        return 'Username must be 20 characters or fewer'
+        return t('user.validationUsernameMax')
       }
     }
 
     if (field === 'email') {
       if (!value.trim()) {
-        return 'Please enter email'
+        return t('user.validationEmailRequired')
       }
 
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailPattern.test(value)) {
-        return 'Please enter a valid email'
+        return t('user.validationEmailInvalid')
       }
     }
 
     if (field === 'password') {
       if (!value.trim()) {
-        return 'Please enter password'
+        return t('user.validationPasswordRequired')
       }
 
       if (value.length < 6) {
-        return 'Password must be at least 6 characters'
+        return t('user.validationPasswordMin')
       }
     }
 
@@ -144,12 +148,13 @@ function UserPage() {
     return nextErrors
   }
 
+  // ทำงานหลังผู้ใช้ยืนยัน modal บันทึก แล้วส่ง draft ที่แก้ไขไปยัง API
   const confirmSaveEdit = async () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
 
     if (!userId) {
-      setErrorMessage('User id is required before saving this account')
+      setErrorMessage(t('user.errorUserIdRequiredSave'))
       setIsSaveModalOpen(false)
       return
     }
@@ -179,16 +184,17 @@ function UserPage() {
       saveUserDetailsProfile(nextUser)
       setIsSaveModalOpen(false)
       setIsEditing(false)
-      message.success(response?.message || 'Account updated successfully')
+      message.success(response?.message || t('user.accountUpdated'))
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || 'Unable to update account')
+        setErrorMessage(error.message || t('user.errorUpdate'))
       } else {
-        setErrorMessage('Unable to update account')
+        setErrorMessage(t('user.errorUpdate'))
       }
     }
   }
 
+  // sync ค่า draft และข้อความ validation ระหว่างแก้ไขข้อมูล
   const onChangeField = (field: keyof UserForm, value: string) => {
     setErrorMessage('')
     setDraft((prev) => ({ ...prev, [field]: value }))
@@ -203,12 +209,13 @@ function UserPage() {
     })
   }
 
+  // เปิด modal ยืนยันเฉพาะเมื่อ draft ปัจจุบันผ่าน validation
   const handleSaveEdit = () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
 
     if (!userId) {
-      setErrorMessage('User id is required before saving this account')
+      setErrorMessage(t('user.errorUserIdRequiredSave'))
       return
     }
 
@@ -227,12 +234,13 @@ function UserPage() {
     navigate('/login')
   }
 
+  // การลบบัญชีต้องผ่าน modal ยืนยันก่อนเสมอ
   const handleDeleteAccount = () => {
     const storedProfile = getStoredUserProfile()
     const userId = searchParams.get('id') || storedProfile.userId
 
     if (!userId) {
-      setErrorMessage('User id is required before deleting this account')
+      setErrorMessage(t('user.errorUserIdRequiredDelete'))
       return
     }
 
@@ -244,7 +252,7 @@ function UserPage() {
     const userId = searchParams.get('id') || storedProfile.userId
 
     if (!userId) {
-      setErrorMessage('User id is required before deleting this account')
+      setErrorMessage(t('user.errorUserIdRequiredDelete'))
       setIsDeleteModalOpen(false)
       return
     }
@@ -256,13 +264,13 @@ function UserPage() {
       const response = await deleteUserById(userId)
       clearStoredUserProfile()
       setIsDeleteModalOpen(false)
-      message.success(response.message || 'Account deleted successfully')
+      message.success(response.message || t('user.accountDeleted'))
       navigate('/login')
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message || 'Unable to delete account')
+        setErrorMessage(error.message || t('user.errorDelete'))
       } else {
-        setErrorMessage('Unable to delete account')
+        setErrorMessage(t('user.errorDelete'))
       }
     } finally {
       setIsDeleting(false)
@@ -277,145 +285,119 @@ function UserPage() {
 
       <main className="user-main">
         <section className="user-card">
-          <h1 className="user-title">INFORMATION</h1>
+          <h1 className="user-title">{t('user.title')}</h1>
 
-          {isLoading ? <p className="user-status">Loading user data...</p> : null}
-          {!isLoading && errorMessage ? <p className="user-status user-status-error">{errorMessage}</p> : null}
-
-          <div className="user-form-grid">
-            <div className="user-field">
-              <label className="user-label">EMAIL</label>
-              <input
-                className={`user-input${fieldErrors.email ? ' user-input-invalid' : ''}`}
-                value={viewData.email}
-                disabled={isLoading || Boolean(errorMessage)}
-                readOnly={!isEditing}
-                tabIndex={isEditing ? 0 : -1}
-                onChange={(event) => onChangeField('email', event.target.value)}
-              />
-              {isEditing && fieldErrors.email ? <p className="user-field-error">{fieldErrors.email}</p> : null}
+          {isLoading ? (
+            <div className="user-loading-state" role="status" aria-live="polite">
+              {t('user.loading')}
             </div>
+          ) : (
+            <>
+              {errorMessage ? <p className="user-status user-status-error">{errorMessage}</p> : null}
 
-            <div className="user-field">
-              <label className="user-label">USERNAME</label>
-              <div className="user-username-wrap">
-                <input
-                  className={`user-input${fieldErrors.username ? ' user-input-invalid' : ''}${isEditing ? ' user-username-input' : ''}`}
-                  value={viewData.username}
-                  disabled={isLoading || Boolean(errorMessage)}
-                  readOnly={!isEditing}
-                  maxLength={20}
-                  tabIndex={isEditing ? 0 : -1}
-                  onChange={(event) => onChangeField('username', event.target.value)}
-                />
-                {isEditing ? <span className="user-field-count user-field-count-inside">{`${viewData.username.length}/20`}</span> : null}
+              {/* ค่าเริ่มต้นเป็น read-only และเปลี่ยนเป็น draft ที่แก้ไขได้เมื่อเข้า edit mode */}
+              <div className="user-form-grid">
+                <div className="user-field">
+                  <label className="user-label">{t('user.email')}</label>
+                  <input
+                    className={`user-input${fieldErrors.email ? ' user-input-invalid' : ''}`}
+                    value={viewData.email}
+                    disabled={Boolean(errorMessage)}
+                    readOnly={!isEditing}
+                    tabIndex={isEditing ? 0 : -1}
+                    onChange={(event) => onChangeField('email', event.target.value)}
+                  />
+                  {isEditing && fieldErrors.email ? <p className="user-field-error">{fieldErrors.email}</p> : null}
+                </div>
+
+                <div className="user-field">
+                  <label className="user-label">{t('user.username')}</label>
+                  <div className="user-username-wrap">
+                    <input
+                      className={`user-input${fieldErrors.username ? ' user-input-invalid' : ''}${isEditing ? ' user-username-input' : ''}`}
+                      value={viewData.username}
+                      disabled={Boolean(errorMessage)}
+                      readOnly={!isEditing}
+                      maxLength={20}
+                      tabIndex={isEditing ? 0 : -1}
+                      onChange={(event) => onChangeField('username', event.target.value)}
+                    />
+                    {isEditing ? <span className="user-field-count user-field-count-inside">{`${viewData.username.length}/20`}</span> : null}
+                  </div>
+                  {isEditing && fieldErrors.username ? <p className="user-field-error">{fieldErrors.username}</p> : null}
+                </div>
+
+                <div className="user-field">
+                  <label className="user-label">{t('user.password')}</label>
+                  <div className="user-password-wrap">
+                    <input
+                      className={`user-input user-password-input${fieldErrors.password ? ' user-input-invalid' : ''}`}
+                      type={isPasswordVisible ? 'text' : 'password'}
+                      value={viewData.password}
+                      disabled={Boolean(errorMessage)}
+                      readOnly={!isEditing}
+                      tabIndex={isEditing ? 0 : -1}
+                      onChange={(event) => onChangeField('password', event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="user-password-toggle"
+                      onClick={() => setIsPasswordVisible((current) => !current)}
+                      disabled={Boolean(errorMessage)}
+                      aria-label={isPasswordVisible ? t('user.hidePassword') : t('user.showPassword')}
+                      aria-pressed={isPasswordVisible}
+                    >
+                      {isPasswordVisible ? <EyeTwoTone className="user-password-icon" /> : <EyeInvisibleOutlined className="user-password-icon" />}
+                    </button>
+                  </div>
+                  {isEditing && fieldErrors.password ? <p className="user-field-error">{fieldErrors.password}</p> : null}
+                </div>
               </div>
-              {isEditing && fieldErrors.username ? <p className="user-field-error">{fieldErrors.username}</p> : null}
-            </div>
 
-            <div className="user-field">
-              <label className="user-label">PASSWORD</label>
-              <div className="user-password-wrap">
-                <input
-                  className={`user-input user-password-input${fieldErrors.password ? ' user-input-invalid' : ''}`}
-                  type={isPasswordVisible ? 'text' : 'password'}
-                  value={viewData.password}
-                  disabled={isLoading || Boolean(errorMessage)}
-                  readOnly={!isEditing}
-                  tabIndex={isEditing ? 0 : -1}
-                  onChange={(event) => onChangeField('password', event.target.value)}
-                />
-                <button
-                  type="button"
-                  className="user-password-toggle"
-                  onClick={() => setIsPasswordVisible((current) => !current)}
-                  disabled={isLoading || Boolean(errorMessage)}
-                  aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
-                  aria-pressed={isPasswordVisible}
-                >
-                  {isPasswordVisible ? (
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="user-password-icon">
-                      <path
-                        d="M3 4.5 19.5 21"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M10.6 6.2A10.9 10.9 0 0 1 12 6c5.7 0 9.8 5.3 10 5.5a.8.8 0 0 1 0 1c-.1.2-1.5 1.9-3.7 3.4M6.7 9C4.6 10.5 3.2 12.2 3 12.5a.8.8 0 0 0 0 1C3.2 13.7 7.3 19 13 19c.6 0 1.2-.1 1.8-.2"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M9.9 10a3 3 0 0 0 4.1 4.1"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="user-password-icon">
-                      <path
-                        d="M2.5 12S6.5 5.5 12 5.5 21.5 12 21.5 12 17.5 18.5 12 18.5 2.5 12 2.5 12Z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                  )}
-                </button>
+              {/* ปุ่มหลักจะเปลี่ยนตามสถานะว่าฟอร์มอยู่ใน edit mode หรือไม่ */}
+              <div className="user-actions">
+                {isEditing ? (
+                  <>
+                    <button type="button" className="user-edit-btn" onClick={handleSaveEdit}>
+                      {t('user.save')}
+                    </button>
+                    <button type="button" className="user-cancel-btn" onClick={cancelEdit}>
+                      {t('user.cancel')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="user-edit-btn"
+                      onClick={startEdit}
+                      disabled={Boolean(errorMessage)}
+                    >
+                      {t('user.edit')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="user-delete-btn"
+                      disabled={Boolean(errorMessage) || isDeleting}
+                      onClick={handleDeleteAccount}
+                    >
+                      {t('user.deleteAccount')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="user-logout-btn"
+                      onClick={handleLogout}
+                      disabled={isDeleting}
+                    >
+                      {t('user.logout')}
+                    </button>
+                  </>
+                )}
               </div>
-              {isEditing && fieldErrors.password ? <p className="user-field-error">{fieldErrors.password}</p> : null}
-            </div>
-          </div>
-
-          <div className="user-actions">
-            {isEditing ? (
-              <>
-                <button type="button" className="user-edit-btn" onClick={handleSaveEdit}>
-                  save
-                </button>
-                <button type="button" className="user-cancel-btn" onClick={cancelEdit}>
-                  cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="user-edit-btn"
-                  onClick={startEdit}
-                  disabled={isLoading || Boolean(errorMessage)}
-                >
-                  edit
-                </button>
-
-                <button
-                  type="button"
-                  className="user-delete-btn"
-                  disabled={isLoading || Boolean(errorMessage) || isDeleting}
-                  onClick={handleDeleteAccount}
-                >
-                  Delete Account
-                </button>
-
-                <button
-                  type="button"
-                  className="user-logout-btn"
-                  onClick={handleLogout}
-                  disabled={isDeleting}
-                >
-                  Logout
-                </button>
-              </>
-            )}
-
-          </div>
+            </>
+          )}
         </section>
       </main>
 
@@ -429,20 +411,21 @@ function UserPage() {
         onCancel={() => setIsSaveModalOpen(false)}
         className="user-delete-modal"
       >
+        {/* modal ยืนยันการบันทึกช่วยกันการอัปเดตโปรไฟล์โดยไม่ตั้งใจ */}
         <div className="user-delete-modal-body">
           <button
             type="button"
             className="user-delete-modal-close"
             onClick={() => setIsSaveModalOpen(false)}
-            aria-label="Close dialog"
+            aria-label={t('user.closeDialog')}
           >
             <CloseOutlined />
           </button>
 
           <h2 className="user-delete-modal-title">
-            Do you really want to
+            {t('user.saveQuestion')}
             <br />
-            <span className="user-save-modal-accent">save</span> your changes?
+            <span className="user-save-modal-accent">{t('user.save')}</span> {t('user.yourChanges')}
           </h2>
 
           <div className="user-delete-modal-actions">
@@ -451,14 +434,14 @@ function UserPage() {
               className="user-delete-modal-confirm"
               onClick={confirmSaveEdit}
             >
-              YES
+              {t('user.yes')}
             </button>
             <button
               type="button"
               className="user-delete-modal-cancel"
               onClick={() => setIsSaveModalOpen(false)}
             >
-              CANCEL
+              {t('user.cancel').toUpperCase()}
             </button>
           </div>
         </div>
@@ -478,21 +461,22 @@ function UserPage() {
         }}
         className="user-delete-modal"
       >
+        {/* modal ยืนยันการลบช่วยกันการลบบัญชีโดยไม่ตั้งใจ */}
         <div className="user-delete-modal-body">
           <button
             type="button"
             className="user-delete-modal-close"
             onClick={() => setIsDeleteModalOpen(false)}
             disabled={isDeleting}
-            aria-label="Close dialog"
+            aria-label={t('user.closeDialog')}
           >
             <CloseOutlined />
           </button>
 
           <h2 className="user-delete-modal-title">
-            Do you really want to
+            {t('user.deleteQuestion')}
             <br />
-            <span className="user-delete-modal-danger">delete</span> your account?
+            <span className="user-delete-modal-danger">{t('user.delete')}</span> {t('user.yourAccount')}
           </h2>
 
           <div className="user-delete-modal-actions">
@@ -502,7 +486,7 @@ function UserPage() {
               onClick={confirmDeleteAccount}
               disabled={isDeleting}
             >
-              {isDeleting ? '...' : 'YES'}
+              {isDeleting ? '...' : t('user.yes')}
             </button>
             <button
               type="button"
@@ -510,7 +494,7 @@ function UserPage() {
               onClick={() => setIsDeleteModalOpen(false)}
               disabled={isDeleting}
             >
-              CANCEL
+              {t('user.cancel').toUpperCase()}
             </button>
           </div>
         </div>

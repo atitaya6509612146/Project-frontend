@@ -1,3 +1,36 @@
+/* ลงทะเบียนฟอนต์กลางที่ใช้ได้ทุกหน้า */
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Text'),
+    local('SukhumvitSet-Text'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SukhumvitSet';
+  src:
+    local('Sukhumvit Set Bold'),
+    local('SukhumvitSet-Bold'),
+    url('./assets/fonts/SukhumvitSet.ttc') format('truetype-collection');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Itim';
+  src: url('./assets/fonts/Itim-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 112%;
+}
+
+/* ปรับ box sizing และขนาด root ให้เป็นฐานเดียวกัน */
 * {
   box-sizing: border-box;
 }
@@ -12,4 +45,51 @@ body,
 
 body {
   min-height: 100vh;
+}
+
+/* ฟอนต์เริ่มต้นของแอป: ใช้ Itim ทุกที่ ยกเว้นช่องกรอกข้อมูล */
+body,
+body *:not(input):not(textarea):not(select):not(option) {
+  font-family: 'Itim', 'SukhumvitSet', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+}
+
+/* ปรับ typography แยกตามภาษาที่เลือก */
+html[lang='en'] body,
+html[lang='en'] body *:not(input):not(textarea):not(select):not(option) {
+  font-weight: 600;
+}
+
+html[lang='th'] h1,
+html[lang='th'] h2,
+html[lang='th'] .login-header,
+html[lang='th'] .login-title,
+html[lang='th'] .signup-logo,
+html[lang='th'] .signup-title,
+html[lang='th'] .signup-success-title,
+html[lang='th'] .top-nav-brand,
+html[lang='th'] .top-nav-link,
+html[lang='th'] .footer-add-btn,
+html[lang='th'] .progress-greeting,
+html[lang='th'] .progress-level-title,
+html[lang='th'] .goals-heading,
+html[lang='th'] .goal-card-title,
+html[lang='th'] .stats-heading,
+html[lang='th'] .stats-title,
+html[lang='th'] .goal-modal-title,
+html[lang='th'] .user-title,
+html[lang='th'] .user-delete-modal-title {
+  font-weight: 700;
+}
+
+html[lang='th'] .top-nav {
+  font-size: 1.08em;
+}
+
+html[lang='th'] .top-nav-link {
+  font-size: clamp(15px, 1.18vw, 24px);
+}
+
+html[lang='th'] .top-nav,
+html[lang='th'] .top-nav * {
+  font-weight: 700;
 }

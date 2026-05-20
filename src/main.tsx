@@ -9,6 +9,7 @@ import ProgressPage from './progress/progress.tsx'
 import { LangProvider } from './hooks/useLang.tsx'
 import 'antd/dist/reset.css'
 
+// จุดเริ่มต้นของแอป: mount React, ครอบ language context และกำหนด routes
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LangProvider>

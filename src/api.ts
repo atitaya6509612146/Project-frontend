@@ -1,11 +1,13 @@
 import { getStoredAuthToken } from './lib/user-profile'
 
+// ประเภทข้อมูลและตัวเลือก fetch กลางที่ helper API ด้านล่างใช้ร่วมกัน
 export type ApiRequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   headers?: HeadersInit
 }
 
+// รูปแบบ error กลางของ API พร้อม status และ payload ที่ parse แล้ว
 export class ApiError extends Error {
   status: number
   payload: unknown
@@ -43,14 +45,36 @@ export type UserResponse = {
   email?: string
   username?: string
   password?: string
+  pets?: string
   level?: number
   exp?: number
+  [key: string]: unknown
+}
+
+export type UserPetsResponse = ApiMessageResponse & {
+  pets?: string
+  pet?: string
+  [key: string]: unknown
+}
+
+export type UpdateUserPetsPayload = {
+  pets: string
+}
+
+export type UserStreakResponse = ApiMessageResponse & {
+  id?: number
+  user_id?: number
+  streak_count?: number
+  best_streak?: number
+  last_completed_date?: string
+  updated_at?: string
   [key: string]: unknown
 }
 
 export type ActivityCategoryResponse = {
   id: number
   category_name: string
+  category_name_th?: string
 }
 
 export type CreateUserGoalPayload = {
@@ -94,6 +118,8 @@ export type UserGoalResponse = ApiMessageResponse & {
   frequency_type?: string
   start_date?: string
   end_date?: string
+  is_completed_today?: boolean
+  is_completed?: boolean
   create_date?: string
   update_date?: string
   [key: string]: unknown
@@ -114,7 +140,7 @@ export type GoalHistoryChartParams = {
   userid: string | number
   year: string | number
   month: string | number
-  categoryid: string | number
+  categoryid?: string | number
 }
 
 export type GoalHistoryChartResponse = {
@@ -122,13 +148,13 @@ export type GoalHistoryChartResponse = {
 } | unknown[]
 
 export type CreateGoalHistoryPayload = {
-  id: number
+  id?: number
   goal_id: number
   user_id: number
-  finish_date: string
+  finish_date?: string
   is_completed: boolean
-  create_date: string
-  update_date: string
+  create_date?: string
+  update_date?: string
 }
 
 export type UpdateGoalHistoryPayload = {
@@ -158,6 +184,7 @@ const API_BASE_URL = 'http://localhost:5057'
 
 const buildUrl = (path: string) => `${API_BASE_URL}${path}`
 
+// สร้าง query string สำหรับ GET endpoint ที่มี filter parameters
 const buildPathWithParams = (path: string, params: Record<string, string | number>) => {
   const searchParams = new URLSearchParams()
 
@@ -168,6 +195,7 @@ const buildPathWithParams = (path: string, params: Record<string, string | numbe
   return `${path}?${searchParams.toString()}`
 }
 
+// wrapper กลางของ fetch: ใส่ token/header/body, parse response และโยน ApiError เมื่อ request ล้มเหลว
 export const apiRequest = async <TResponse>(
   path: string,
   { method = 'GET', body, headers }: ApiRequestOptions = {},
@@ -214,6 +242,7 @@ export const apiRequest = async <TResponse>(
   return ((payload ?? {}) as TResponse)
 }
 
+// endpoint สำหรับ auth และบัญชีผู้ใช้
 export const login = (payload: LoginPayload) =>
   apiRequest<LoginResponse>('/api/Login', {
     method: 'POST',
@@ -228,6 +257,18 @@ export const createUser = (payload: CreateUserPayload) =>
 
 export const getUserById = (id: string | number) => apiRequest<UserResponse>(`/api/Users/${id}`)
 
+export const getUserPets = (id: string | number) =>
+  apiRequest<UserPetsResponse | string>(`/api/Users/${id}/pets`)
+
+export const getUserStreak = (id: string | number) =>
+  apiRequest<UserStreakResponse>(`/api/Users/${id}/streak`)
+
+export const updateUserPets = (id: string | number, payload: UpdateUserPetsPayload) =>
+  apiRequest<UserPetsResponse & ApiMessageResponse>(`/api/Users/${id}/pets`, {
+    method: 'POST',
+    body: payload,
+  })
+
 export const updateUserById = (id: string | number, payload: UpdateUserPayload) =>
   apiRequest<UserResponse & ApiMessageResponse>(`/api/Users/${id}`, {
     method: 'PUT',
@@ -239,6 +280,7 @@ export const deleteUserById = (id: string | number) =>
     method: 'DELETE',
   })
 
+// endpoint หมวดหมู่และ goal ที่หน้า progress/goals/statistics ใช้
 export const getActivityCategories = () => apiRequest<ActivityCategoryResponse[]>('/api/ActivityCategories')
 
 export const getActivityCategoryById = (id: string | number) =>
@@ -252,10 +294,10 @@ export const createUserGoal = (payload: CreateUserGoalPayload) =>
 
 export const getUserGoals = () => apiRequest<UserGoalResponse[]>('/api/UserGoals')
 
-export const getTodayUserGoals = (userid: string | number) =>
+export const getTodayUserGoals = (userId: string | number) =>
   apiRequest<UserGoalResponse[]>(
     buildPathWithParams('/api/UserGoals/today', {
-      userid,
+      userId,
     }),
   )
 
@@ -270,6 +312,7 @@ export const deleteUserGoalById = (id: string | number) =>
     method: 'DELETE',
   })
 
+// endpoint ประวัติ goal สำหรับบันทึกการทำสำเร็จและโหลดข้อมูลกราฟ
 export const getGoalHistories = () => apiRequest<GoalHistoryResponse[]>('/api/GoalHistories')
 
 export const getGoalHistoryById = (id: string | number) =>
@@ -287,12 +330,16 @@ export const updateGoalHistoryById = (id: string | number, payload: UpdateGoalHi
     body: payload,
   })
 
-export const getGoalHistoryChart = ({ userid, year, month, categoryid }: GoalHistoryChartParams) =>
-  apiRequest<GoalHistoryChartResponse>(
-    buildPathWithParams('/api/GoalHistories/chart', {
-      userid,
-      year,
-      month,
-      categoryid,
-    }),
-  )
+export const getGoalHistoryChart = ({ userid, year, month, categoryid }: GoalHistoryChartParams) => {
+  const params: Record<string, string | number> = {
+    userid,
+    year,
+    month,
+  }
+
+  if (categoryid !== undefined) {
+    params.categoryid = categoryid
+  }
+
+  return apiRequest<GoalHistoryChartResponse>(buildPathWithParams('/api/GoalHistories/chart', params))
+}
